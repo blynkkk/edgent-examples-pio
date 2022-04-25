@@ -4,7 +4,7 @@
  */
 
   // Example configuration for Wio Terminal Board
-  #define BOARD_BUTTON_PIN            WIO_KEY_A             // Pin where user button is attached
+  //#define BOARD_BUTTON_PIN          WIO_KEY_A             // Pin where user button is attached
   #define BOARD_BUTTON_ACTIVE_LOW     true                  // true if button is "active-low"
 
   #define BOARD_LED_PIN               LED_BUILTIN           // Set LED pin - if you have a single-color LED attached

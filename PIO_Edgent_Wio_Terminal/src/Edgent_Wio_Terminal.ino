@@ -119,14 +119,14 @@ void display_init()
   lv_disp_drv_register( &disp_drv );
   
   /* Init keypad */
-  pinMode(BTN_UP,    INPUT);
-  pinMode(BTN_DOWN,  INPUT);
-  pinMode(BTN_LEFT,  INPUT);
-  pinMode(BTN_RIGHT, INPUT);
-  pinMode(BTN_OK,    INPUT);
-  pinMode(BTN_A,     INPUT);
-  pinMode(BTN_B,     INPUT);
-  pinMode(BTN_C,     INPUT);
+  pinMode(BTN_UP,    INPUT_PULLUP);
+  pinMode(BTN_DOWN,  INPUT_PULLUP);
+  pinMode(BTN_LEFT,  INPUT_PULLUP);
+  pinMode(BTN_RIGHT, INPUT_PULLUP);
+  pinMode(BTN_OK,    INPUT_PULLUP);
+  pinMode(BTN_A,     INPUT_PULLUP);
+  pinMode(BTN_B,     INPUT_PULLUP);
+  pinMode(BTN_C,     INPUT_PULLUP);
 
   static lv_indev_drv_t kb_drv;
   lv_indev_drv_init(&kb_drv);
