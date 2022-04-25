@@ -362,6 +362,7 @@ void display_update_state()
     if (MODE_WAIT_CONFIG == m) {
         lv_label_set_text_static(lbl_ip, STR_NONE);
         lv_label_set_text_static(lbl_ssid, STR_NONE);
+        lv_label_set_text_static(lbl_rssi, STR_NONE);
         lv_label_set_text_static(lbl_state, "Configuring");
     } else if (MODE_CONFIGURING == m) {
         lv_label_set_text_static(lbl_state, "Configuring...");
