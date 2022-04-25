@@ -24,8 +24,8 @@
 
 #define APP_DEBUG
 
-void display_set_state(String s);
-void display_update();
+void display_update_state();
+void display_run();
 
 #include "BlynkEdgent.h"
 
@@ -67,7 +67,7 @@ void display_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color
   lv_disp_flush_ready(disp);
 }
 
-void display_update()
+void display_run()
 {
   lv_timer_handler();
 }
@@ -153,17 +153,33 @@ void display_init()
   lv_obj_center(label_reset);
 }
 
-void display_set_state(String s)
+void display_update_state()
 {
-  lv_label_set_text(lbl_state, s.c_str());
+  const State m = BlynkState::get();
+  if (MODE_WAIT_CONFIG == m) {
+    lv_label_set_text(lbl_state, "Configuring");
+  } else if (MODE_CONFIGURING == m) {
+    lv_label_set_text(lbl_state, "Configuring...");
+  } else if (MODE_CONNECTING_NET == m) {
+    lv_label_set_text(lbl_state, "Connecting to WiFi");
+  } else if (MODE_CONNECTING_CLOUD == m) {
+    lv_label_set_text(lbl_state, "Connecting to Blynk");
+  } else if (MODE_RUNNING == m) {
+    lv_label_set_text(lbl_state, "Connected");
+  } else if (MODE_OTA_UPGRADE == m) {
+    lv_label_set_text(lbl_state, "Updating firmware");
+  } else if (MODE_ERROR == m) {
+    lv_label_set_text(lbl_state, "Error");
+  }
   lv_obj_align(lbl_state, LV_ALIGN_CENTER, 0, 0);
   
-  if (s == "Connecting to WiFi") {
+  if (m == MODE_CONNECTING_NET || m == MODE_CONNECTING_CLOUD || m == MODE_RUNNING)
+  {
     lv_obj_clear_state(btn_reset, LV_STATE_DISABLED);
-  } else if (s == "Configuring") {
+  } else {
     lv_obj_add_state(btn_reset, LV_STATE_DISABLED);
   }
-  display_update();
+  display_run();
 }
 
 /*

@@ -33,21 +33,7 @@ void BlynkState::set(State m) {
 
     // You can put your state handling here,
     // i.e. implement custom indication
-    if (MODE_WAIT_CONFIG == m) {
-      display_set_state("Configuring");
-    } else if (MODE_CONFIGURING == m) {
-      display_set_state("Configuring...");
-    } else if (MODE_CONNECTING_NET == m) {
-      display_set_state("Connecting to WiFi");
-    } else if (MODE_CONNECTING_CLOUD == m) {
-      display_set_state("Connecting to Blynk");
-    } else if (MODE_RUNNING == m) {
-      display_set_state("Connected");
-    } else if (MODE_OTA_UPGRADE == m) {
-      display_set_state("Updating firmware");
-    } else if (MODE_ERROR == m) {
-      display_set_state("Error");
-    }
+    display_update_state();
   }
 }
 
@@ -122,6 +108,6 @@ void app_loop() {
     edgentTimer.run();
     edgentConsole.run();
     
-    display_update();
+    display_run();
 }
 
