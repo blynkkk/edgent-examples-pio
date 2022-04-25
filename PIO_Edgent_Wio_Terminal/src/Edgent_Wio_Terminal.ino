@@ -36,35 +36,35 @@ void display_update();
  * LVGL configuration
  */
 
-static const uint16_t screenWidth  = 320;
-static const uint16_t screenHeight = 240;
+const uint16_t SCREEN_WIDTH  = 320;
+const uint16_t SCREEN_HEIGHT = 240;
 
-const int btnUp        = WIO_5S_UP;
-const int btnDown      = WIO_5S_DOWN;
-const int btnLeft      = WIO_5S_LEFT;
-const int btnRight     = WIO_5S_RIGHT;
-const int btnOk        = WIO_5S_PRESS;
-const int btnA         = WIO_KEY_A;
-const int btnB         = WIO_KEY_B;
-const int btnC         = WIO_KEY_C;
+const int BTN_UP        = WIO_5S_UP;
+const int BTN_DOWN      = WIO_5S_DOWN;
+const int BTN_LEFT      = WIO_5S_LEFT;
+const int BTN_RIGHT     = WIO_5S_RIGHT;
+const int BTN_OK        = WIO_5S_PRESS;
+const int BTN_A         = WIO_KEY_A;
+const int BTN_B         = WIO_KEY_B;
+const int BTN_C         = WIO_KEY_C;
 
 
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ screenWidth * 10 ];
+static lv_color_t buf[ SCREEN_WIDTH * 10 ];
 
-TFT_eSPI tft = TFT_eSPI(screenWidth, screenHeight); /* TFT instance */
+TFT_eSPI tft = TFT_eSPI(SCREEN_WIDTH, SCREEN_HEIGHT); /* TFT instance */
 
-void display_flush (lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void display_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)
 {
-  uint32_t w = ( area->x2 - area->x1 + 1 );
-  uint32_t h = ( area->y2 - area->y1 + 1 );
+  uint32_t w = area->x2 - area->x1 + 1;
+  uint32_t h = area->y2 - area->y1 + 1;
 
   tft.startWrite();
-  tft.setAddrWindow( area->x1, area->y1, w, h );
-  tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t*)&color_p->full, w * h, true);
   tft.endWrite();
 
-  lv_disp_flush_ready( disp );
+  lv_disp_flush_ready(disp);
 }
 
 void display_update()
@@ -78,15 +78,15 @@ lv_obj_t *btn_reset;
 void keyboard_read(lv_indev_drv_t* drv, lv_indev_data_t* data)
 {
   uint32_t last_key = 0;
-  if (digitalRead(btnOk) == LOW) {            last_key = LV_KEY_ENTER;
-  } else if (digitalRead(btnRight) == LOW) {  last_key = LV_KEY_RIGHT;
-  } else if (digitalRead(btnLeft) == LOW) {   last_key = LV_KEY_LEFT;
-  } else if (digitalRead(btnUp) == LOW) {     last_key = LV_KEY_UP;
-  } else if (digitalRead(btnDown) == LOW) {   last_key = LV_KEY_DOWN;
-  } else if (digitalRead(btnA) == LOW) {      last_key = LV_KEY_PREV;
-  } else if (digitalRead(btnB) == LOW) {      last_key = LV_KEY_ENTER;
-  } else if (digitalRead(btnC) == LOW) {      last_key = LV_KEY_NEXT;
-  } 
+  if (digitalRead(BTN_OK) == LOW)         {  last_key = LV_KEY_ENTER; }
+  else if (digitalRead(BTN_RIGHT) == LOW) {  last_key = LV_KEY_RIGHT; }
+  else if (digitalRead(BTN_LEFT) == LOW)  {  last_key = LV_KEY_LEFT;  }
+  else if (digitalRead(BTN_UP) == LOW)    {  last_key = LV_KEY_UP;    }
+  else if (digitalRead(BTN_DOWN) == LOW)  {  last_key = LV_KEY_DOWN;  }
+  else if (digitalRead(BTN_A) == LOW)     {  last_key = LV_KEY_PREV;  }
+  else if (digitalRead(BTN_B) == LOW)     {  last_key = LV_KEY_ENTER; }
+  else if (digitalRead(BTN_C) == LOW)     {  last_key = LV_KEY_NEXT;  }
+
   data->state = (last_key) ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
   data->key = last_key;
 }
@@ -107,26 +107,26 @@ void display_init()
   tft.setRotation( 3 );
 
   lv_init();
-  lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * 10 );
+  lv_disp_draw_buf_init( &draw_buf, buf, NULL, SCREEN_WIDTH * 10 );
 
   /* Init the display */
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init( &disp_drv );
-  disp_drv.hor_res = screenWidth;
-  disp_drv.ver_res = screenHeight;
+  disp_drv.hor_res = SCREEN_WIDTH;
+  disp_drv.ver_res = SCREEN_HEIGHT;
   disp_drv.flush_cb = display_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register( &disp_drv );
   
   /* Init keypad */
-  pinMode(btnUp,    INPUT);
-  pinMode(btnDown,  INPUT);
-  pinMode(btnLeft,  INPUT);
-  pinMode(btnRight, INPUT);
-  pinMode(btnOk,    INPUT);
-  pinMode(btnA,     INPUT);
-  pinMode(btnB,     INPUT);
-  pinMode(btnC,     INPUT);
+  pinMode(BTN_UP,    INPUT);
+  pinMode(BTN_DOWN,  INPUT);
+  pinMode(BTN_LEFT,  INPUT);
+  pinMode(BTN_RIGHT, INPUT);
+  pinMode(BTN_OK,    INPUT);
+  pinMode(BTN_A,     INPUT);
+  pinMode(BTN_B,     INPUT);
+  pinMode(BTN_C,     INPUT);
 
   static lv_indev_drv_t kb_drv;
   lv_indev_drv_init(&kb_drv);
