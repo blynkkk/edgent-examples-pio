@@ -165,12 +165,24 @@ static lv_obj_t * create_button(lv_obj_t * parent, const char * icon, const char
     return obj;
 }
 
+static void msgbox_reset_clicked(lv_event_t* e)
+{
+    lv_obj_t * mbox = lv_event_get_current_target(e);
+    if (lv_msgbox_get_active_btn(mbox) == 0) {
+        if (BlynkState::get() != MODE_WAIT_CONFIG) {
+            BlynkState::set(MODE_RESET_CONFIG);
+        }
+    }
+    lv_msgbox_close(mbox);
+}
+
 static void btn_reset_clicked(lv_event_t* e)
 {
-    lv_event_code_t code = lv_event_get_code(e);
-    if (BlynkState::get() != MODE_WAIT_CONFIG) {
-        BlynkState::set(MODE_RESET_CONFIG);
-    }
+    static const char * btns[] ={ "OK", "Cancel", "" };
+
+    lv_obj_t * mbox = lv_msgbox_create(NULL, "Warning", "Device configuration will be reset", btns, false);
+    lv_obj_add_event_cb(mbox, msgbox_reset_clicked, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_center(mbox);
 }
 
 static void brightness_changed(lv_event_t* e)
