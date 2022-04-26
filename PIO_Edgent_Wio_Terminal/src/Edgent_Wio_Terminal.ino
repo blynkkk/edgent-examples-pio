@@ -1,15 +1,5 @@
 /*
- * Required libraries:
- *  - Seeed Arduino rpcUnified
- *  - Seeed Arduino rpcWiFi
- *  - Seeed Arduino SFUD
- *  - Seeed Arduino FS
- *  - Seeed Arduino mbedtls
- *  - Seeed Arduino FreeRTOS
- *  - ArduinoOTA
- *  - ArduinoHttpClient
- *  
- * Please also update the WiFi module firmware:
+ * Please update the WiFi module firmware:
  *   https://wiki.seeedstudio.com/Wio-Terminal-Network-Overview
  */
 
@@ -74,7 +64,6 @@ TFT_eSPI tft = TFT_eSPI(SCREEN_WIDTH, SCREEN_HEIGHT); /* TFT instance */
 LCDBackLight backLight;
 
 lv_obj_t *lbl_state, *lbl_rssi, *lbl_ssid, *lbl_ip, *lbl_mac, *btn_reset;
-bool soundEnabled = false;
 
 const char* STR_NONE = "---";
 
@@ -178,11 +167,14 @@ static void msgbox_reset_clicked(lv_event_t* e)
 
 static void btn_reset_clicked(lv_event_t* e)
 {
-    static const char * btns[] ={ "OK", "Cancel", "" };
+    static const char * btns[] = { "OK", "Cancel", NULL };
 
     lv_obj_t * mbox = lv_msgbox_create(NULL, "Warning", "Device configuration will be reset", btns, false);
     lv_obj_add_event_cb(mbox, msgbox_reset_clicked, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_center(mbox);
+
+    lv_btnmatrix_set_selected_btn(lv_msgbox_get_btns(mbox), 1);
+    lv_group_focus_obj(lv_msgbox_get_btns(mbox));
 }
 
 static void brightness_changed(lv_event_t* e)
@@ -191,10 +183,19 @@ static void brightness_changed(lv_event_t* e)
     backLight.setBrightness(lv_slider_get_value(slider));
 }
 
+bool soundEnabled = true;
+
 static void sound_switched(lv_event_t* e)
 {
     lv_obj_t * sw = lv_event_get_target(e);
     soundEnabled = lv_obj_has_state(sw, LV_STATE_CHECKED);
+}
+
+static void group_focus_cb(lv_group_t* g)
+{
+    if (soundEnabled) {
+        playTone(1915, 10);
+    }
 }
 
 void display_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)
@@ -226,12 +227,6 @@ void keyboard_read(lv_indev_drv_t* drv, lv_indev_data_t* data)
     else if (digitalRead(BTN_C) == LOW)     { last_key = LV_KEY_PREV;  }
     else if (digitalRead(BTN_B) == LOW)     { last_key = LV_KEY_ESC;   }
     else if (digitalRead(BTN_A) == LOW)     { last_key = LV_KEY_NEXT;  }
-    
-    static uint32_t prev_key = 0;
-    if (soundEnabled && prev_key == 0 && last_key != 0) {
-        playTone(1915, 10);
-    }
-    prev_key = last_key;
 
     data->state = (last_key) ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED;
     data->key = last_key;
@@ -276,6 +271,7 @@ void display_init()
     /* Default group */
     lv_group_t * g = lv_group_create();
     lv_group_set_default(g);
+    lv_group_set_focus_cb(g, group_focus_cb);
     lv_indev_set_group(kb_indev, g);
 
     /* Create simple Menu */
