@@ -198,6 +198,16 @@ static void group_focus_cb(lv_group_t* g)
     }
 }
 
+static void menu_opened(lv_event_t* e)
+{
+    // TODO: Does not always focus the back button. LVGL bug?
+    lv_obj_t * menu = (lv_obj_t *)lv_event_get_user_data(e);
+    lv_obj_t * btn = lv_menu_get_main_header_back_btn(menu);
+    if (!lv_menu_back_btn_is_root(menu, btn)) {
+        lv_group_focus_obj(btn);
+    }
+}
+
 void display_flush(lv_disp_drv_t* disp, const lv_area_t* area, lv_color_t* color_p)
 {
     uint32_t w = area->x2 - area->x1 + 1;
@@ -277,6 +287,7 @@ void display_init()
     /* Create simple Menu */
 
     lv_obj_t * menu = lv_menu_create(lv_scr_act());
+    lv_obj_add_event_cb(menu, menu_opened, LV_EVENT_VALUE_CHANGED, menu);
 
     lv_color_t bg_color = lv_obj_get_style_bg_color(menu, 0);
     lv_obj_set_style_bg_color(menu, lv_color_darken(lv_obj_get_style_bg_color(menu, 0), 40), 0);
@@ -319,7 +330,7 @@ void display_init()
     cont = create_status(section, NULL, "MAC", STR_NONE);
     lbl_mac = lv_obj_get_child(cont, 1);
     
-    lv_menu_cont_create(sub_status_page);
+    lv_menu_separator_create(sub_status_page);
     section = lv_menu_section_create(sub_status_page);
     cont = create_button(section, NULL, "Configuration", "Reset");
     btn_reset = lv_obj_get_child(cont, 1);
@@ -334,16 +345,16 @@ void display_init()
     section = lv_menu_section_create(root_page);
 
     cont = create_slider(section, LV_SYMBOL_IMAGE, "Brightness", 1, backLight.getMaxBrightness(), backLight.getBrightness());
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), brightness_changed, LV_EVENT_VALUE_CHANGED, menu);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), brightness_changed, LV_EVENT_VALUE_CHANGED, NULL);
 
     cont = create_switch(section, LV_SYMBOL_AUDIO, "Sound", soundEnabled);
-    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), sound_switched, LV_EVENT_VALUE_CHANGED, menu);
+    lv_obj_add_event_cb(lv_obj_get_child(cont, 2), sound_switched, LV_EVENT_VALUE_CHANGED, NULL);
     
     cont = create_link(section, LV_SYMBOL_WIFI, "Status", " ");
     lbl_state = lv_obj_get_child(cont, 2);
     lv_menu_set_load_page_event(menu, lbl_state, sub_status_page);
 
-    lv_menu_cont_create(root_page);
+    lv_menu_separator_create(root_page);
     section = lv_menu_section_create(root_page);
     cont = create_link(section, LV_SYMBOL_SETTINGS, "About", ">");
     cont = lv_obj_get_child(cont, 2);
@@ -403,8 +414,7 @@ void setup()
     lv_label_set_text(lbl_mac, mac.c_str());
 
     if (WiFi.isConnected()) {
-        String rssi = String(WiFi.RSSI()) + " dBm";
-        lv_label_set_text(lbl_rssi, rssi.c_str());
+        lv_label_set_text_fmt(lbl_rssi, "%d dBm", WiFi.RSSI());
     } else {
         lv_label_set_text_static(lbl_rssi, STR_NONE);
     }
