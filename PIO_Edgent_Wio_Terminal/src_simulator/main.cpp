@@ -65,8 +65,8 @@ void hal_setup(void)
     lv_indev_drv_init(&indev_drv);            /*Basic initialization*/
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = sdl_mouse_read;       /*This function will be called periodically (by the library) to get the mouse position and state*/
-    lv_indev_drv_register(&indev_drv);
-    
+    lv_indev_t * mouse_indev = lv_indev_drv_register(&indev_drv);
+
     static lv_indev_drv_t indev_drv_2;
     lv_indev_drv_init(&indev_drv_2); /*Basic initialization*/
     indev_drv_2.type = LV_INDEV_TYPE_KEYPAD;
@@ -87,6 +87,15 @@ void hal_setup(void)
      * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about how much time were elapsed
      * Create an SDL thread to do this*/
     SDL_CreateThread(tick_thread, "tick", NULL);
+
+#ifdef SHOW_CUSTOM_CURSOR
+    SDL_ShowCursor(SDL_DISABLE);
+
+    LV_IMG_DECLARE(mouse_cursor_icon);
+    lv_obj_t * cursor_obj = lv_img_create(lv_scr_act());
+    lv_img_set_src(cursor_obj, &mouse_cursor_icon);
+    lv_indev_set_cursor(mouse_indev, cursor_obj);
+#endif
 }
 
 void hal_loop(void)
