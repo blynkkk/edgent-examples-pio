@@ -67,7 +67,10 @@ void playTone(int tone, int duration) {
  * LVGL configuration
  */
 
-// Comment this out to use 5-way switch for keyboard navigation
+#define SCREEN_WIDTH  320
+#define SCREEN_HEIGHT 240
+
+// Comment this out to use 5-way switch as a keypad
 #define EMULATE_MOUSE
 
 #include <GUI.h>
@@ -155,6 +158,9 @@ void display_init()
 {
     tft.begin();
     tft.setRotation(3);
+
+    static lv_disp_draw_buf_t draw_buf;
+    static lv_color_t frame_buf[ SCREEN_WIDTH * 16 ];
 
     lv_init();
     lv_disp_draw_buf_init(&draw_buf, frame_buf, NULL, SCREEN_WIDTH * 16);

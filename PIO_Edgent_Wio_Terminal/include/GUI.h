@@ -1,14 +1,9 @@
 
-#define SCREEN_WIDTH  320
-#define SCREEN_HEIGHT 240
-
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t frame_buf[ SCREEN_WIDTH * 16 ];
 static lv_style_t outline;
 
-lv_obj_t *lbl_state, *lbl_rssi, *lbl_ssid, *lbl_ip, *lbl_mac, *btn_reset;
+static lv_obj_t *lbl_state, *lbl_rssi, *lbl_ssid, *lbl_ip, *lbl_mac, *btn_reset, *kb;
 
-const char* STR_NONE = "---";
+static const char* STR_NONE = "---";
 
 static lv_obj_t * create_text(lv_obj_t * parent, const char * icon, const char * txt)
 {
@@ -74,6 +69,38 @@ static lv_obj_t * create_status(lv_obj_t * parent, const char * icon, const char
     return obj;
 }
 
+static void ta_event_cb(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * ta = lv_event_get_target(e);
+    if (code == LV_EVENT_FOCUSED) {
+        lv_keyboard_set_textarea(kb, ta);
+        lv_obj_clear_flag(kb, LV_OBJ_FLAG_HIDDEN);
+        // TODO: need to do it here otherwise it changes to true by itself
+        lv_keyboard_set_popovers(kb, false);
+    } else if (code == LV_EVENT_DEFOCUSED) {
+        lv_keyboard_set_textarea(kb, NULL);
+        lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+static lv_obj_t * create_text_input(lv_obj_t * parent, const char * icon, const char * txt, const char * txt2 = "", const char * txt3 = "")
+{
+    lv_obj_t * obj = create_text(parent, icon, txt);
+
+    lv_obj_t * ta = lv_textarea_create(obj);
+    lv_textarea_set_one_line(ta, true);
+    lv_textarea_set_text(ta, txt2);
+    lv_textarea_set_placeholder_text(ta, txt3);
+    lv_obj_set_flex_grow(ta, 1);
+    lv_obj_set_style_border_width(ta, 0, LV_STATE_DEFAULT);
+    lv_obj_set_style_pad_all(ta, 2, LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ta, LV_TEXT_ALIGN_RIGHT, LV_STATE_DEFAULT);
+    lv_obj_add_event_cb(ta, ta_event_cb, LV_EVENT_ALL, NULL);
+
+    return obj;
+}
+
 #if 0
 static lv_obj_t * create_link(lv_obj_t * parent, const char * icon, const char * txt, const char * txt2 = STR_NONE)
 {
@@ -123,6 +150,7 @@ static void btn_reset_clicked(lv_event_t* e)
 {
     static const char * btns[] = { "OK", "Cancel", NULL };
 
+    // TODO: bug with encoder, focusing the background elements
     lv_obj_t * mbox = lv_msgbox_create(NULL, "Warning", "Device configuration will be reset", btns, false);
     lv_obj_add_event_cb(mbox, msgbox_reset_clicked, LV_EVENT_VALUE_CHANGED, NULL);
     lv_obj_center(mbox);
@@ -265,7 +293,9 @@ static void gui_init()
 
     cont = create_switch(section, LV_SYMBOL_AUDIO, "Sound", soundEnabled);
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), sound_switched, LV_EVENT_VALUE_CHANGED, NULL);
-    
+
+    cont = create_text_input(section, LV_SYMBOL_EDIT, "Text", "", "input here");
+
     cont = create_status(section, LV_SYMBOL_WIFI, "Status");
     make_focusable(cont);
     lbl_state = lv_obj_get_child(cont, 2);
@@ -279,4 +309,9 @@ static void gui_init()
     lv_menu_set_load_page_event(menu, cont, sub_about_page);
 
     lv_menu_set_page(menu, root_page);
+
+    /* Keyboard */ 
+    kb = lv_keyboard_create(lv_scr_act());
+    lv_obj_set_size(kb,  LV_HOR_RES, LV_VER_RES / 3);
+    lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
 }
