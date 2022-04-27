@@ -10,6 +10,9 @@
 #include <string>
 #include <lvgl.h>
 
+#define BLYNK_FIRMWARE_VERSION 	"1.0.0"
+#define BLYNK_VERSION 			"1.0.0"
+
 #include "GUI.h"
 
 /**

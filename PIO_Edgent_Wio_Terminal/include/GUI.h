@@ -4,6 +4,7 @@
 
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t frame_buf[ SCREEN_WIDTH * 16 ];
+static lv_style_t outline;
 
 lv_obj_t *lbl_state, *lbl_rssi, *lbl_ssid, *lbl_ip, *lbl_mac, *btn_reset;
 
@@ -28,19 +29,10 @@ static lv_obj_t * create_text(lv_obj_t * parent, const char * icon, const char *
     return obj;
 }
 
-static void make_text_focusable(lv_obj_t * obj)
+static void make_focusable(lv_obj_t * obj)
 {
     lv_obj_clear_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
     lv_group_add_obj(lv_group_get_default(), obj);
-
-    static lv_style_t outline;
-    lv_style_init(&outline);
-    lv_style_set_radius(&outline, lv_dpx(6));
-    lv_style_set_outline_color(&outline, lv_theme_get_color_primary(obj));
-    lv_style_set_outline_width(&outline, lv_dpx(3));
-    lv_style_set_outline_pad(&outline, -lv_dpx(3));
-    lv_style_set_outline_opa(&outline, LV_OPA_50);
-
     lv_obj_add_style(obj, &outline, LV_STATE_FOCUS_KEY);
 }
 
@@ -177,11 +169,9 @@ static void menu_opened(lv_event_t* e)
 static void gui_init()
 {
 #ifdef EMULATOR
-    #define MENU_DARKEN 20
-    #define BLYNK_FIRMWARE_VERSION "1.0.0"
-    #define BLYNK_VERSION "1.0.0"
+    #define MENU_DARKEN 15
 
-    static char devName[] = "Emulator";
+    static char devName[] = "Simulator";
 
     std::string lv_ver = "v" + std::to_string(lv_version_major()) +
                          "." + std::to_string(lv_version_minor()) +
@@ -215,6 +205,17 @@ static void gui_init()
     lv_obj_set_style_bg_color(menu, lv_color_darken(bg_color, MENU_DARKEN), 0);
     lv_obj_set_size(menu, lv_disp_get_hor_res(NULL), lv_disp_get_ver_res(NULL));
     lv_obj_center(menu);
+
+    /* Menu outline */
+
+    lv_style_init(&outline);
+    lv_style_set_radius(&outline, lv_dpx(6));
+    lv_style_set_outline_color(&outline, lv_theme_get_color_primary(menu));
+    lv_style_set_outline_width(&outline, lv_dpx(3));
+    lv_style_set_outline_pad(&outline, -lv_dpx(2));
+    lv_style_set_outline_opa(&outline, LV_OPA_50);
+
+    /* Menu pages */
 
     lv_obj_t * cont;
     lv_obj_t * section;
@@ -266,7 +267,7 @@ static void gui_init()
     lv_obj_add_event_cb(lv_obj_get_child(cont, 2), sound_switched, LV_EVENT_VALUE_CHANGED, NULL);
     
     cont = create_status(section, LV_SYMBOL_WIFI, "Status");
-    make_text_focusable(cont);
+    make_focusable(cont);
     lbl_state = lv_obj_get_child(cont, 2);
     lv_menu_set_load_page_event(menu, cont, sub_status_page);
 
@@ -274,7 +275,7 @@ static void gui_init()
     section = lv_menu_section_create(root_page);
 
     cont = create_text(section, LV_SYMBOL_SETTINGS, "About");
-    make_text_focusable(cont);
+    make_focusable(cont);
     lv_menu_set_load_page_event(menu, cont, sub_about_page);
 
     lv_menu_set_page(menu, root_page);
