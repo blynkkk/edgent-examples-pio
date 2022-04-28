@@ -67,10 +67,16 @@ void CopyString(const String& s, T(&arr)[size]) {
 static bool config_load_blnkopt()
 {
   static const char blnkopt[] = "blnkopt\0"
+#if 0 // Pre-configuration
+    BLYNK_PARAM_KV("ssid" , "ssid")
+    BLYNK_PARAM_KV("pass" , "password")
+    BLYNK_PARAM_KV("auth" , "auth-token")
+#else
     BLYNK_PARAM_KV("ssid" , BLYNK_PARAM_PLACEHOLDER_64
                             BLYNK_PARAM_PLACEHOLDER_64
                             BLYNK_PARAM_PLACEHOLDER_64
                             BLYNK_PARAM_PLACEHOLDER_64)
+#endif
     BLYNK_PARAM_KV("host" , CONFIG_DEFAULT_SERVER)
     BLYNK_PARAM_KV("port" , BLYNK_TOSTRING(CONFIG_DEFAULT_PORT))
     "\0";
