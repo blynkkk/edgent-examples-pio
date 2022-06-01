@@ -473,7 +473,7 @@ void enterSwitchToSTA() {
 
 void enterError() {
   BlynkState::set(MODE_ERROR);
-  
+
   unsigned long timeoutMs = millis() + 10000;
   while (timeoutMs > millis() || g_buttonPressed)
   {

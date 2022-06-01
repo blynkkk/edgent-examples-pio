@@ -67,10 +67,14 @@ void CopyString(const String& s, T(&arr)[size]) {
 static bool config_load_blnkopt()
 {
   static const char blnkopt[] = "blnkopt\0"
-#if 0 // Pre-configuration
-    BLYNK_PARAM_KV("ssid" , "ssid")
-    BLYNK_PARAM_KV("pass" , "password")
-    BLYNK_PARAM_KV("auth" , "auth-token")
+#if defined(BLYNK_AUTH_TOKEN)
+    /* While Blynk.Edgent assigns Auth token, SSID and password
+     * dynamically using the App, you can still pre-configure them.
+     * Please use this FOR TESTING PURPOSES ONLY.
+     */
+    BLYNK_PARAM_KV("ssid" , BLYNK_WIFI_SSID)
+    BLYNK_PARAM_KV("pass" , BLYNK_WIFI_PASS)
+    BLYNK_PARAM_KV("auth" , BLYNK_AUTH_TOKEN)
 #else
     BLYNK_PARAM_KV("ssid" , BLYNK_PARAM_PLACEHOLDER_64
                             BLYNK_PARAM_PLACEHOLDER_64
