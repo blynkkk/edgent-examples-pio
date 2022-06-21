@@ -22,7 +22,8 @@ void console_init()
 
   edgentConsole.addCommand("devinfo", []() {
     edgentConsole.printf(
-        R"json({"board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s"})json" "\n",
+        R"json({"name":"%s","board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s"})json" "\n",
+        getWiFiName().c_str(),
         BLYNK_DEVICE_NAME,
         BLYNK_TEMPLATE_ID,
         BLYNK_FIRMWARE_TYPE,
@@ -31,13 +32,10 @@ void console_init()
   });
 
   edgentConsole.addCommand("netinfo", []() {
-    char ssidBuff[64];
-    getWiFiName(ssidBuff, sizeof(ssidBuff));
-
     edgentConsole.printf(
         R"json({"ssid":"%s","bssid":"%s","mac":"%s","rssi":%d})json" "\n",
-        ssidBuff,
-        WiFi.softAPmacAddress().c_str(),
+        WiFi.SSID(),
+        WiFi.BSSIDstr().c_str(),
         WiFi.macAddress().c_str(),
         WiFi.RSSI()
     );
