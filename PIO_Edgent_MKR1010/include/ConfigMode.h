@@ -116,6 +116,44 @@ String getWiFiName(bool withPrefix = true)
   }
 }
 
+static
+String macToString(byte mac[6]) {
+  char buff[20];
+  snprintf(buff, sizeof(buff), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
+  return String(buff);
+}
+
+static
+String getWiFiMacAddress() {
+  byte mac[6] = { 0, };
+  WiFi.macAddress(mac);
+  return macToString(mac);
+}
+
+static
+String getWiFiApBSSID() {
+  return getWiFiMacAddress();
+}
+
+static
+String getWiFiNetworkSSID() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return "";
+  }
+  return WiFi.SSID();
+}
+
+static
+String getWiFiNetworkBSSID() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return "";
+  }
+  byte bssid[6];
+  WiFi.BSSID(bssid);
+  return macToString(bssid);
+}
+
 String urlDecode(const String& text)
 {
   String decoded = "";
@@ -196,9 +234,9 @@ String scanNetworks()
         WiFi.BSSID(id, mac);
 
         snprintf(buff, sizeof(buff),
-          R"json(  {"ssid":"%s","bssid":"%02x:%02x:%02x:%02x:%02x:%02x","rssi":%i,"sec":"%s","ch":%i})json",
+          R"json(  {"ssid":"%s","bssid":"%s","rssi":%ld,"sec":"%s","ch":%i})json",
           WiFi.SSID(id),
-          mac[5], mac[4], mac[3], mac[2], mac[1], mac[0],
+          macToString(mac).c_str(),
           WiFi.RSSI(id),
           sec,
           WiFi.channel(id)
@@ -332,18 +370,15 @@ void enterConfigMode()
     const char* tmpl = BLYNK_TEMPLATE_ID;
 
     char buff[512];
-
-    byte mac[6] = { 0, };
-    WiFi.macAddress(mac);
-
     snprintf(buff, sizeof(buff),
-      R"json({"board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","ssid":"%s","bssid":"%02x:%02x:%02x:%02x:%02x:%02x","last_error":%d,"wifi_scan":true,"static_ip":true})json",
+      R"json({"board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","ssid":"%s","bssid":"%s","mac":"%s","last_error":%d,"wifi_scan":true,"static_ip":true})json",
       BLYNK_DEVICE_NAME,
       tmpl ? tmpl : "Unknown",
       BLYNK_FIRMWARE_TYPE,
       BLYNK_FIRMWARE_VERSION,
       getWiFiName().c_str(),
-      mac[5], mac[4], mac[3], mac[2], mac[1], mac[0],
+      getWiFiApBSSID().c_str(),
+      getWiFiMacAddress().c_str(),
       configStore.last_error
     );
     content = buff;

@@ -112,6 +112,26 @@ String getWiFiName(bool withPrefix = true)
   }
 }
 
+static
+String getWiFiMacAddress() {
+  return WiFi.macAddress();
+}
+
+static
+String getWiFiApBSSID() {
+  return WiFi.softAPmacAddress();
+}
+
+static
+String getWiFiNetworkSSID() {
+  return WiFi.SSID();
+}
+
+static
+String getWiFiNetworkBSSID() {
+  return WiFi.BSSIDstr();
+}
+
 void enterConfigMode()
 {
   WiFi.mode(WIFI_OFF);
@@ -238,8 +258,8 @@ void enterConfigMode()
       BLYNK_FIRMWARE_TYPE,
       BLYNK_FIRMWARE_VERSION,
       getWiFiName().c_str(),
-      WiFi.softAPmacAddress().c_str(),
-      WiFi.macAddress().c_str(),
+      getWiFiApBSSID().c_str(),
+      getWiFiMacAddress().c_str(),
       configStore.last_error
     );
     server.send(200, "application/json", buff);
