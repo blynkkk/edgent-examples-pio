@@ -199,7 +199,7 @@ static void gui_init()
 #ifdef EMULATOR
     #define MENU_DARKEN 15
 
-    static char devName[] = "Simulator";
+    String devName = "Simulator";
 
     std::string lv_ver = "v" + std::to_string(lv_version_major()) +
                          "." + std::to_string(lv_version_minor()) +
@@ -210,8 +210,7 @@ static void gui_init()
 #else
     #define MENU_DARKEN 40
 
-    static char devName[64];
-    getWiFiName(devName, sizeof(devName));
+    String devName = getWiFiName();
 
     String lv_ver = String("v") + lv_version_major() +
                            "."  + lv_version_minor() +
@@ -284,7 +283,7 @@ static void gui_init()
     lv_obj_add_event_cb(btn_reset, btn_reset_clicked, LV_EVENT_CLICKED, NULL);
 
     /* Create a root page */
-    lv_obj_t * root_page = lv_menu_page_create(menu, devName);
+    lv_obj_t * root_page = lv_menu_page_create(menu, (char*)devName.c_str());
     lv_obj_set_style_pad_hor(root_page, lv_obj_get_style_pad_left(lv_menu_get_main_header(menu), 0), 0);
     section = lv_menu_section_create(root_page);
 
