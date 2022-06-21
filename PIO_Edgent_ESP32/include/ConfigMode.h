@@ -85,7 +85,7 @@ String encodeUniquePart(uint32_t n, unsigned len)
 
   char buf[16] = { 0, };
   char prev = 0;
-  for (int i = 0; i < len; n /= base) {
+  for (unsigned i = 0; i < len; n /= base) {
     char c = alphabet[n % base];
     if (c == prev) {
       c = alphabet[(n+1) % base];
@@ -375,6 +375,9 @@ void enterConfigMode()
 void enterConnectNet() {
   BlynkState::set(MODE_CONNECTING_NET);
   DEBUG_PRINT(String("Connecting to WiFi: ") + configStore.wifiSSID);
+
+  // Needed for setHostname to work
+  WiFi.enableSTA(false);
 
   String hostname = getWiFiName();
   hostname.replace(" ", "-");

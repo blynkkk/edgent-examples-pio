@@ -247,6 +247,9 @@ void enterConnectNet() {
   BlynkState::set(MODE_CONNECTING_NET);
   DEBUG_PRINT(String("Connecting to WiFi: ") + configStore.wifiSSID);
 
+  // Needed for setHostname to work
+  WiFi.enableSTA(false);
+
   String hostname = getWiFiName();
   hostname.replace(" ", "-");
   WiFi.setHostname(hostname.c_str());
