@@ -107,7 +107,7 @@ String getWiFiName(bool withPrefix = true)
   String devUnique = encodeUniquePart(unique, 4);
 
   String devPrefix = CONFIG_DEVICE_PREFIX;
-  String devName = String(BLYNK_DEVICE_NAME).substring(0, 29-6-devPrefix.length());
+  String devName = String(BLYNK_DEVICE_NAME).substring(0, 31-6-devPrefix.length());
 
   if (withPrefix) {
     return devPrefix + " " + devName + "-" + devUnique;
@@ -266,7 +266,7 @@ void enterConfigMode()
       tmpl ? tmpl : "Unknown",
       BLYNK_FIRMWARE_TYPE,
       BLYNK_FIRMWARE_VERSION,
-      getWiFiName(),
+      getWiFiName().c_str(),
       WiFi.softAPmacAddress().c_str(),
       WiFi.macAddress().c_str(),
       configStore.last_error

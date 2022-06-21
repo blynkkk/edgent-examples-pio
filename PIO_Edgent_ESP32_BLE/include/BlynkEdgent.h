@@ -49,10 +49,10 @@ void printDeviceBanner()
     BLYNK_PRINT.println(String(configStore.cloudToken).substring(0,4) +
                 " - •••• - •••• - ••••");
   }
-  BLYNK_PRINT.print(" Platform:  "); BLYNK_PRINT.println(BLYNK_INFO_DEVICE);
+  BLYNK_PRINT.print(" Platform:  "); BLYNK_PRINT.println(String(BLYNK_INFO_DEVICE) + " @ " + ESP.getCpuFreqMHz() + "MHz");
+  BLYNK_PRINT.print(" Chip rev:  "); BLYNK_PRINT.println(ESP.getChipRevision());
   BLYNK_PRINT.print(" SDK:       "); BLYNK_PRINT.println(ESP.getSdkVersion());
   BLYNK_PRINT.print(" Flash:     "); BLYNK_PRINT.println(String(ESP.getFlashChipSize() / 1024) + "K");
-  BLYNK_PRINT.print(" Chip rev:  "); BLYNK_PRINT.println(ESP.getChipRevision());
   BLYNK_PRINT.print(" Free mem:  "); BLYNK_PRINT.println(ESP.getFreeHeap());
   BLYNK_PRINT.println("----------------------------------------------------");
 #endif
