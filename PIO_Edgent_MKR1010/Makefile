@@ -38,4 +38,5 @@ uploadfs: fs
 	@pio run -e $(PIOENV) --target uploadfs
 
 monitor:
+	@sleep 1
 	@pio device monitor --quiet

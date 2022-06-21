@@ -1,11 +1,5 @@
 /*
- * Required libraries:
- *  - WiFiNINA
- *  - ArduinoOTA
- *  - ArduinoHttpClient
- *  - Timer5
- *  
- * Please also update the WiFi module firmware, if needed
+ * NOTE: Please update the WiFi module firmware, if needed
  */
 
 // Fill-in information from your Blynk Template here
