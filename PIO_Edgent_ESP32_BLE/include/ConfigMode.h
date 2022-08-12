@@ -178,7 +178,7 @@ void enterConfigMode()
 
         char buff[255];
         int len = snprintf(buff, sizeof(buff),
-          R"json({"t":"info","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","name":"%s","last_error":%d,"multi_ifs":1})json",
+          R"json({"t":"info","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","name":"%s","last_error":%d})json",
           tmpl ? tmpl : "Unknown",
           BLYNK_FIRMWARE_TYPE,
           BLYNK_FIRMWARE_VERSION,
