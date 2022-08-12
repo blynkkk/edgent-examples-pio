@@ -76,9 +76,14 @@ void enterConfigMode()
   server.begin(getWiFiName().c_str());
   StaticJsonDocument<256> json;
 
-  String ssid, pass, token, host, port;
+  String intf, ssid, pass, token, host, port;
   String ip, mask, gw, dns, dns2;
   bool forceSave = false;
+
+  const bool hasWiFi = 1;
+  const bool hasBLE = 1;
+  const bool hasCellular = 1;
+  const bool hasEthernet = 1;
 
   while (BlynkState::is(MODE_WAIT_CONFIG) || BlynkState::is(MODE_CONFIGURING)) {
     delay(10);
@@ -94,6 +99,7 @@ void enterConfigMode()
         for (JsonPair item : obj) {
           const JsonString& key = item.key();
           if      (key == "t")      { /* skip */ }
+          else if (key == "if")     { intf  = item.value().as<String>(); }
           else if (key == "ssid")   { ssid  = item.value().as<String>(); }
           else if (key == "pass")   { pass  = item.value().as<String>(); }
           else if (key == "blynk")  { token = item.value().as<String>(); }
@@ -117,7 +123,7 @@ void enterConfigMode()
         DEBUG_PRINT(String("WiFi SSID: ") + ssid + " Pass: " + pass);
         DEBUG_PRINT(String("Blynk cloud: ") + token + " @ " + host + ":" + port);
 
-        if (token.length() == 32 && ssid.length() > 0) {
+        if (intf.length() > 0 && token.length() == 32 && ssid.length() > 0) {
           configStore = configDefault;
           CopyString(ssid, configStore.wifiSSID);
           CopyString(pass, configStore.wifiPass);
@@ -172,15 +178,58 @@ void enterConfigMode()
 
         char buff[255];
         int len = snprintf(buff, sizeof(buff),
-          R"json({"t":"info","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","ssid":"%s","mac":"%s","last_error":%d,"wifi_scan":1,"static_ip":1})json",
+          R"json({"t":"info","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","name":"%s","last_error":%d,"multi_ifs":1})json",
           tmpl ? tmpl : "Unknown",
           BLYNK_FIRMWARE_TYPE,
           BLYNK_FIRMWARE_VERSION,
           getWiFiName().c_str(),
-          getWiFiMacAddress().c_str(),
           configStore.last_error
         );
         server.write(buff, len);
+      } else if (t == "ifs") {
+        DEBUG_PRINT("Sending interface info...");
+
+        server.write(R"json({"t":"ifs_start"})json");
+        delay(10);
+
+        char buff[255];
+        if (hasWiFi) {
+          int len = snprintf(buff, sizeof(buff),
+            R"json({"t":"if","name":"wifi","mac":"%s","scan":1,"static_ip":1,"5ghz":0})json",
+            getWiFiMacAddress().c_str()
+          );
+          server.write(buff, len);
+          delay(10);
+        }
+        if (hasBLE) {
+          int len = snprintf(buff, sizeof(buff),
+            R"json({"t":"if","name":"ble","addr":"%s"})json",
+            getWiFiMacAddress().c_str() // TODO
+          );
+          server.write(buff, len);
+          delay(10);
+        }
+        if (hasCellular) {
+          int len = snprintf(buff, sizeof(buff),
+            R"json({"t":"if","name":"cell","imei":"%s","imsi":"%s","iccid":"%s","scan":0,"pin":0,"apn":0})json",
+            "AA-BBBBBB-CCCCCC-D",       // TODO
+            "255 06 1234567890",
+            "891460 0000 0000 0012",
+            getWiFiMacAddress().c_str()
+          );
+          server.write(buff, len);
+          delay(10);
+        }
+        if (hasEthernet) {
+          int len = snprintf(buff, sizeof(buff),
+            R"json({"t":"if","name":"eth","mac":"%s","static_ip":1})json",
+            getWiFiMacAddress().c_str() // TODO
+          );
+          server.write(buff, len);
+          delay(10);
+        }
+        server.write(R"json({"t":"ifs_end"})json");
+
       } else if (t == "scan") {
         DEBUG_PRINT("Scanning networks...");
 
