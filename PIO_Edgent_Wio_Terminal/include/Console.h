@@ -41,9 +41,9 @@ void console_init()
   edgentConsole.addCommand("netinfo", []() {
     edgentConsole.printf(
         R"json({"ssid":"%s","bssid":"%s","mac":"%s","rssi":%d})json" "\n",
-        WiFi.SSID().c_str(),
-        WiFi.BSSIDstr().c_str(),
-        WiFi.macAddress().c_str(),
+        getWiFiNetworkSSID().c_str(),
+        getWiFiNetworkBSSID().c_str(),
+        getWiFiMacAddress().c_str(),
         WiFi.RSSI()
     );
   });

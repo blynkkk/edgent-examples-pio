@@ -3,9 +3,6 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 
-#ifdef BLYNK_USE_SPIFFS
-  #include "SPIFFS.h"
-#else
   const char* config_form = R"html(
 <!DOCTYPE HTML>
 <html>
@@ -54,7 +51,6 @@
 </body>
 </html>
 )html";
-#endif
 
 WebServer server(80);
 DNSServer dnsServer;
@@ -109,6 +105,26 @@ String getWiFiName(bool withPrefix = true)
   } else {
     return devName + "-" + devUnique;
   }
+}
+
+static
+String getWiFiMacAddress() {
+  return WiFi.macAddress();
+}
+
+static
+String getWiFiApBSSID() {
+  return WiFi.softAPmacAddress();
+}
+
+static
+String getWiFiNetworkSSID() {
+  return WiFi.SSID();
+}
+
+static
+String getWiFiNetworkBSSID() {
+  return WiFi.BSSIDstr();
 }
 
 String scanNetworks()
@@ -295,8 +311,8 @@ void enterConfigMode()
       BLYNK_FIRMWARE_TYPE,
       BLYNK_FIRMWARE_VERSION,
       getWiFiName().c_str(),
-      WiFi.softAPmacAddress().c_str(),
-      WiFi.macAddress().c_str(),
+      getWiFiApBSSID().c_str(),
+      getWiFiMacAddress().c_str(),
       configStore.last_error
     );
     server.send(200, "application/json", buff);
@@ -312,16 +328,6 @@ void enterConfigMode()
     restartMCU();
   });
 
-#ifdef BLYNK_USE_SPIFFS
-  if (SPIFFS.begin()) {
-    server.serveStatic("/img/favicon.png", SPIFFS, "/img/favicon.png");
-    server.serveStatic("/img/logo.png", SPIFFS, "/img/logo.png");
-    server.serveStatic("/", SPIFFS, "/index.html");
-  } else {
-    DEBUG_PRINT("Webpage: No SPIFFS");
-  }
-#endif
-
   server.begin();
 
   while (BlynkState::is(MODE_WAIT_CONFIG) || BlynkState::is(MODE_CONFIGURING)) {
@@ -335,10 +341,6 @@ void enterConfigMode()
   }
 
   server.stop();
-  
-#ifdef BLYNK_USE_SPIFFS
-  SPIFFS.end();
-#endif
 }
 
 void enterConnectNet() {
