@@ -2,19 +2,6 @@
 #include <WiFiClient.h>
 #include <utility>
 
-WiFiServer server(80);
-
-String urlDecode(const String& text);
-String urlFindArg(const String& url, const String& arg);
-
-enum Request {
-  REQ_BOARD_INFO,
-  REQ_ROOT,
-  REQ_SCAN_WIFI,
-  REQ_CONFIG,
-  REQ_RESET,
-  REQ_REBOOT
-};
 
 const char* config_form = R"html(
 <!DOCTYPE HTML>
@@ -64,6 +51,20 @@ const char* config_form = R"html(
 </body>
 </html>
 )html";
+
+WiFiServer server(80);
+
+String urlDecode(const String& text);
+String urlFindArg(const String& url, const String& arg);
+
+enum Request {
+  REQ_BOARD_INFO,
+  REQ_ROOT,
+  REQ_SCAN_WIFI,
+  REQ_CONFIG,
+  REQ_RESET,
+  REQ_REBOOT
+};
 
 static int connectNetRetries    = WIFI_CLOUD_MAX_RETRIES;
 static int connectBlynkRetries  = WIFI_CLOUD_MAX_RETRIES;
