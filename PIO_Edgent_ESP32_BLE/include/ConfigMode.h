@@ -214,8 +214,7 @@ void enterConfigMode()
             R"json({"t":"if","name":"cell","imei":"%s","imsi":"%s","iccid":"%s","scan":0,"pin":0,"apn":0})json",
             "AA-BBBBBB-CCCCCC-D",       // TODO
             "255 06 1234567890",
-            "891460 0000 0000 0012",
-            getWiFiMacAddress().c_str()
+            "891460 0000 0000 0012"
           );
           server.write(buff, len);
           delay(10);
