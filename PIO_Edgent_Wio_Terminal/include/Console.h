@@ -5,7 +5,9 @@ BlynkConsole    edgentConsole;
 
 void console_init()
 {
-  edgentConsole.init(BLYNK_PRINT);
+#ifdef BLYNK_PRINT
+  edgentConsole.begin(BLYNK_PRINT);
+#endif
 
   edgentConsole.print("\n>");
 

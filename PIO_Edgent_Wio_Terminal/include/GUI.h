@@ -199,7 +199,7 @@ static void gui_init()
 #ifdef EMULATOR
     #define MENU_DARKEN 15
 
-    String devName = "Simulator";
+    std::string devName = "Simulator";
 
     std::string lv_ver = "v" + std::to_string(lv_version_major()) +
                          "." + std::to_string(lv_version_minor()) +
