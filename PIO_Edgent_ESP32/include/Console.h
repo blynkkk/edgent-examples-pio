@@ -6,25 +6,23 @@ BlynkConsole    edgentConsole;
 void console_init()
 {
 #ifdef BLYNK_PRINT
-  edgentConsole.init(BLYNK_PRINT);
+  edgentConsole.begin(BLYNK_PRINT);
 #endif
 
   edgentConsole.print("\n>");
 
   edgentConsole.addCommand("reboot", []() {
-    edgentConsole.print(R"json({"status":"OK","msg":"resetting device"})json" "\n");
+    edgentConsole.print(R"json({"status":"OK","msg":"rebooting wifi module"})json" "\n");
     delay(100);
     restartMCU();
   });
 
-  edgentConsole.addCommand("config", []() {
-    edgentConsole.print(R"json({"status":"OK","msg":"entering configuration mode"})json" "\n");
-    BlynkState::set(MODE_WAIT_CONFIG);
-  });
-
-  edgentConsole.addCommand("erase_config", [=]() {
-    edgentConsole.print(R"json({"status":"OK","msg":"config erased"})json" "\n");
-    BlynkState::set(MODE_RESET_CONFIG);
+  edgentConsole.addCommand("config", [](int argc, const char** argv) {
+    if (argc < 1 || 0 == strcmp(argv[0], "start")) {
+      BlynkState::set(MODE_WAIT_CONFIG);
+    } else if (0 == strcmp(argv[0], "erase")) {
+      BlynkState::set(MODE_RESET_CONFIG);
+    }
   });
 
   edgentConsole.addCommand("devinfo", []() {
@@ -75,9 +73,8 @@ void console_init()
 #ifdef BLYNK_FS
 
   edgentConsole.addCommand("ls", [](int argc, const char** argv) {
-    if (argc < 1) return;
-
-    File rootDir = BLYNK_FS.open(argv[0]);
+    const char* path = (argc < 1) ? "/" : argv[0];
+    File rootDir = BLYNK_FS.open(path);
     while (File f = rootDir.openNextFile()) {
       String fn = f.name();
 
@@ -87,7 +84,7 @@ void console_init()
       md5.calculate();
       String md5str = md5.toString();
 
-      edgentConsole.printf("%8d %-16s %s\n",
+      edgentConsole.printf("%8d %-24s %s\n",
                             f.size(), fn.c_str(),
                             md5str.substring(0,8).c_str());
     }
