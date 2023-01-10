@@ -104,25 +104,26 @@ void console_init()
   });
 
   edgentConsole.addCommand("status", [](int argc, const char** argv) {
-    const int64_t t = esp_timer_get_time() / 1000000;
+    const uint64_t t = micros64() / 1000000;
     unsigned secs = t % BLYNK_SECS_PER_MIN;
     unsigned mins = (t / BLYNK_SECS_PER_MIN) % BLYNK_SECS_PER_MIN;
     unsigned hrs  = (t % BLYNK_SECS_PER_DAY) / BLYNK_SECS_PER_HOUR;
     unsigned days = t / BLYNK_SECS_PER_DAY;
 
+    uint32_t heap_free; uint16_t heap_max;
+    uint8_t heap_frag;
+    ESP.getHeapStats(&heap_free, &heap_max, &heap_frag);
     edgentConsole.printf(" Uptime:          %dd %dh %dm %ds\n", days, hrs, mins, secs);
-    edgentConsole.printf(" Chip:            %s rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
+    edgentConsole.printf(" Reset reason:    %s\n",        ESP.getResetReason().c_str());
     edgentConsole.printf(" Flash:           %dK\n",       ESP.getFlashChipSize() / 1024);
-    edgentConsole.printf(" Stack unused:    %d\n",        uxTaskGetStackHighWaterMark(NULL));
-    edgentConsole.printf(" Heap free:       %d / %d\n",   ESP.getFreeHeap(), ESP.getHeapSize());
-    edgentConsole.printf("      max alloc:  %d\n",        ESP.getMaxAllocHeap());
-    edgentConsole.printf("      min free:   %d\n",        ESP.getMinFreeHeap());
-    if (ESP.getPsramSize()) {
-      edgentConsole.printf(" PSRAM free:      %d / %d\n", ESP.getFreePsram(), ESP.getPsramSize());
-    }
+    edgentConsole.printf(" Stack unused:    %d\n",        ESP.getFreeContStack());
+    edgentConsole.printf(" Heap free:       %d / %d\n",   heap_free, heap_max);
+    edgentConsole.printf("      fragment:   %d\n",        heap_frag);
+    edgentConsole.printf("      max alloc:  %d\n",        ESP.getMaxFreeBlockSize());
 #ifdef BLYNK_FS
-    uint32_t fs_total = BLYNK_FS.totalBytes();
-    edgentConsole.printf(" FS free:         %d / %d\n",   (fs_total-BLYNK_FS.usedBytes()), fs_total);
+    FSInfo fs_info;
+    BLYNK_FS.info(fs_info);
+    edgentConsole.printf(" FS free:         %d / %d\n",   (fs_info.totalBytes-fs_info.usedBytes), fs_info.totalBytes);
 #endif
   });
 
