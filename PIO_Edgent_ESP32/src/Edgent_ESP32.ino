@@ -1,5 +1,24 @@
+/*************************************************************
+  Blynk is a platform with iOS and Android apps to control
+  ESP32, Arduino, Raspberry Pi and the likes over the Internet.
+  You can easily build mobile and web interfaces for any
+  projects by simply dragging and dropping widgets.
+    Downloads, docs, tutorials: https://www.blynk.io
+    Sketch generator:           https://examples.blynk.cc
+    Blynk community:            https://community.blynk.cc
+    Follow us:                  https://www.fb.com/blynkapp
+                                https://twitter.com/blynk_app
 
-// Fill-in information from your Blynk Template here
+  Blynk library is licensed under MIT license
+ *************************************************************
+  Blynk.Edgent implements:
+  - Blynk.Inject - Dynamic WiFi credentials provisioning
+  - Blynk.Air    - Over The Air firmware updates
+  - Device state indication using a physical LED
+  - Credentials reset using a physical Button
+ *************************************************************/
+
+/* Fill in information from your Blynk Template here */
 //#define BLYNK_TEMPLATE_ID           "TMPxxxxxx"
 //#define BLYNK_TEMPLATE_NAME         "Device"
 
