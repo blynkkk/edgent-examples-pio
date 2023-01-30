@@ -22,6 +22,7 @@
  *************************************************************/
 
 /* Fill in information from your Blynk Template here */
+/* Read more: https://bit.ly/BlynkInject */
 //#define BLYNK_TEMPLATE_ID           "TMPxxxxxxx"
 //#define BLYNK_TEMPLATE_NAME         "Device"
 
