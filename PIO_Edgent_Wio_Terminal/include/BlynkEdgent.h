@@ -38,7 +38,6 @@ void BlynkState::set(State m) {
 
     // You can put your state handling here,
     // i.e. implement custom indication
-    display_update_state();
   }
 }
 
@@ -121,7 +120,5 @@ public:
 void app_loop() {
     edgentTimer.run();
     edgentConsole.run();
-    
-    display_run();
 }
 
