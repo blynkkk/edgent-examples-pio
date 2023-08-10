@@ -110,7 +110,7 @@ void console_init()
     unsigned hrs  = (t % BLYNK_SECS_PER_DAY) / BLYNK_SECS_PER_HOUR;
     unsigned days = t / BLYNK_SECS_PER_DAY;
 
-    uint32_t heap_free, heap_max;
+    uint32_t heap_free; uint16_t heap_max;
     uint8_t heap_frag;
     ESP.getHeapStats(&heap_free, &heap_max, &heap_frag);
     edgentConsole.printf(" Uptime:          %dd %dh %dm %ds\n", days, hrs, mins, secs);
