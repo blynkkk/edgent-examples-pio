@@ -100,11 +100,12 @@ String getDeviceRandomSuffix(unsigned size)
   return encodeUniquePart(unique, size);
 }
 
+static
 String systemGetDeviceName(bool withPrefix = true)
 {
   String devUnique = getDeviceRandomSuffix(4);
   String devPrefix = CONFIG_DEVICE_PREFIX;
-  const int maxTmplName = 29 - (2 + devPrefix.length() + devUnique.length());
+  const int maxTmplName = 31 - (2 + devPrefix.length() + devUnique.length());
   String devName = String(BLYNK_TEMPLATE_NAME).substring(0, maxTmplName);
   if (withPrefix) {
     if (devName.length()) {
@@ -265,6 +266,7 @@ String systemGetFlashMode() {
   }
 }
 
+static
 void systemPrintCoreDump(Stream& stream)
 {
   size_t size = 0;
