@@ -9,6 +9,12 @@ extern BlynkTimer edgentTimer;
 
 BLYNK_WRITE(InternalPinOTA) {
   overTheAirURL = param.asString();
+#if defined(ESP32)
+    // Use HTTPS by default
+    if (!overTheAirURL.endsWith("&s=0")) {
+       overTheAirURL.replace("http://", "https://");
+    }
+#endif
 
   edgentTimer.setTimeout(2000L, [](){
     // Start OTA
@@ -86,6 +92,6 @@ void enterOTA() {
   }
 
   DEBUG_PRINT("=== Update successfully completed. Rebooting.");
-  restartMCU();
+  systemReboot();
 }
 

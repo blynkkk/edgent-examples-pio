@@ -72,7 +72,8 @@ static const char serverUpdateForm[] PROGMEM =
       </form>
     </body></html>)";
 
-void restartMCU() {
+static
+void systemReboot() {
   ESP.restart();
   while(1) {};
 }
@@ -96,7 +97,7 @@ String encodeUniquePart(uint32_t n, unsigned len)
 }
 
 static
-String getWiFiName(bool withPrefix = true)
+String systemGetDeviceName(bool withPrefix = true)
 {
   const uint64_t chipId = ESP.getEfuseMac();
 
@@ -114,6 +115,47 @@ String getWiFiName(bool withPrefix = true)
   } else {
     return devName + "-" + devUnique;
   }
+}
+
+// This generates a random ID.
+// Note: It will change each time device flash is erased.
+static
+String systemGetDeviceUID() {
+  static String result;
+  if (!result.length()) {
+    Preferences prefs;
+    if (!prefs.begin("system")) {
+      return "none";
+    }
+    if (prefs.isKey("uid")) {
+      result = prefs.getString("uid");
+    }
+    if (!result.length()) {
+      // Generate and store unique Device ID
+      union {
+        uint32_t dwords[3];
+        uint8_t  bytes[12];
+      } uid;
+
+      uid.dwords[0] = esp_random();
+      uid.dwords[1] = esp_random();
+      uid.dwords[2] = esp_random();
+
+      char str[32];
+      const uint8_t* id = uid.bytes;
+      snprintf(str, sizeof(str),
+               "%02x%02x%02x%02x-%02x%02x%02x%02x-%02x%02x%02x%02x",
+               id[0], id[1],  id[2],  id[3],
+               id[4], id[5],  id[6],  id[7],
+               id[8], id[9], id[10], id[11]);
+      result = str;
+      if (!prefs.putString("uid", result)) {
+        result = "";
+        return "none";
+      }
+    }
+  }
+  return result;
 }
 
 static inline
@@ -169,7 +211,7 @@ void enterConfigMode()
   WiFi.mode(WIFI_AP);
   delay(2000);
   WiFi.softAPConfig(WIFI_AP_IP, WIFI_AP_IP, WIFI_AP_Subnet);
-  WiFi.softAP(getWiFiName().c_str());
+  WiFi.softAP(systemGetDeviceName().c_str());
   delay(500);
 
   // Set up DNS Server
@@ -194,8 +236,7 @@ void enterConfigMode()
     } else {
       server.send(500, "text/plain", "FAIL");
     }
-    delay(1000);
-    restartMCU();
+    edgentTimer.setTimeout(1000, systemReboot);
   }, []() {
     HTTPUpload& upload = server.upload();
     if (upload.status == UPLOAD_FILE_START) {
@@ -315,12 +356,13 @@ void enterConfigMode()
 
     char buff[512];
     snprintf(buff, sizeof(buff),
-      R"json({"board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","ssid":"%s","bssid":"%s","mac":"%s","last_error":%d,"wifi_scan":true,"static_ip":true})json",
+      R"json({"board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","uid":"%s","ssid":"%s","bssid":"%s","mac":"%s","last_error":%d,"wifi_scan":true,"static_ip":true})json",
       BLYNK_TEMPLATE_NAME,
       tmpl ? tmpl : "Unknown",
       BLYNK_FIRMWARE_TYPE,
       BLYNK_FIRMWARE_VERSION,
-      getWiFiName().c_str(),
+      systemGetDeviceUID().c_str(),
+      systemGetDeviceName().c_str(),
       getWiFiApBSSID().c_str(),
       getWiFiMacAddress().c_str(),
       configStore.last_error
@@ -362,9 +404,12 @@ void enterConfigMode()
       for (int i = 0; i < wifi_nets; i++){
         int id = indices[i];
 
+        String ssid = WiFi.SSID(id);
+        ssid.replace("\"", "\\\"");
+
         snprintf(buff, sizeof(buff),
           R"json(  {"ssid":"%s","bssid":"%s","rssi":%i,"sec":"%s","ch":%i})json",
-          WiFi.SSID(id).c_str(),
+          ssid.c_str(),
           WiFi.BSSIDstr(id).c_str(),
           WiFi.RSSI(id),
           wifiSecToStr(WiFi.encryptionType(id)),
@@ -385,7 +430,8 @@ void enterConfigMode()
     server.send(200, "application/json", R"json({"status":"ok","msg":"Configuration reset"})json");
   });
   server.on("/reboot", []() {
-    restartMCU();
+    edgentTimer.setTimeout(50, systemReboot);
+    server.send(200, "application/json", R"json({"status":"ok","msg":"Rebooting"})json");
   });
 
 #ifdef BLYNK_FS
@@ -416,7 +462,7 @@ void enterConnectNet() {
   // Needed for setHostname to work
   WiFi.enableSTA(false);
 
-  String hostname = getWiFiName();
+  String hostname = systemGetDeviceName();
   hostname.replace(" ", "-");
   WiFi.setHostname(hostname.c_str());
 
@@ -498,12 +544,20 @@ void enterConnectCloud() {
     BlynkState::set(MODE_RUNNING);
     connectBlynkRetries = WIFI_CLOUD_MAX_RETRIES;
 
+    if (0 != strcmp(configStore.version, BLYNK_FIRMWARE_VERSION)) {
+      Blynk.logEvent("sys_ota", String("Firmware updated to ") + BLYNK_FIRMWARE_VERSION);
+      configStore.setFwVer(BLYNK_FIRMWARE_VERSION);
+      configStore.setFlag(CONFIG_FLAG_VALID, false);
+    }
+
     if (!configStore.getFlag(CONFIG_FLAG_VALID)) {
       configStore.last_error = BLYNK_PROV_ERR_NONE;
       configStore.setFlag(CONFIG_FLAG_VALID, true);
       config_save();
 
-      Blynk.sendInternal("meta", "set", "Hotspot Name", getWiFiName());
+      Blynk.sendInternal("meta", "set", "Device UID",   systemGetDeviceUID());
+      Blynk.sendInternal("meta", "set", "Hotspot Name", systemGetDeviceName());
+      Blynk.sendInternal("meta", "set", "Network",      configStore.wifiSSID);
     }
   } else if (--connectBlynkRetries <= 0) {
     config_set_last_error(BLYNK_PROV_ERR_CLOUD);
@@ -537,8 +591,6 @@ void enterError() {
     }
   }
   DEBUG_PRINT("Restarting after error.");
-  delay(10);
-
-  restartMCU();
+  systemReboot();
 }
 

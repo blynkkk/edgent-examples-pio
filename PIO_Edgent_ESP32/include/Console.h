@@ -18,8 +18,7 @@ void console_init()
 
   edgentConsole.addCommand("reboot", []() {
     edgentConsole.print(R"json({"status":"OK","msg":"rebooting wifi module"})json" "\n");
-    delay(100);
-    restartMCU();
+    edgentTimer.setTimeout(50, systemReboot);
   });
 
   edgentConsole.addCommand("config", [](int argc, const char** argv) {
@@ -32,12 +31,13 @@ void console_init()
 
   edgentConsole.addCommand("devinfo", []() {
     edgentConsole.printf(
-        R"json({"name":"%s","board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s"})json" "\n",
-        getWiFiName().c_str(),
+        R"json({"name":"%s","board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","uid":"%s"})json" "\n",
+        systemGetDeviceName().c_str(),
         BLYNK_TEMPLATE_NAME,
         BLYNK_TEMPLATE_ID,
         BLYNK_FIRMWARE_TYPE,
-        BLYNK_FIRMWARE_VERSION
+        BLYNK_FIRMWARE_VERSION,
+        systemGetDeviceUID().c_str()
     );
   });
 
@@ -109,14 +109,14 @@ void console_init()
     } else if (0 == strcmp(argv[0], "rollback")) {
       if (Update.rollBack()) {
         edgentConsole.print(R"json({"status":"ok"})json" "\n");
-        edgentTimer.setTimeout(50, restartMCU);
+        edgentTimer.setTimeout(50, systemReboot);
       } else {
         edgentConsole.print(R"json({"status":"error"})json" "\n");
       }
     }
   });
 
-  edgentConsole.addCommand("status", [](int argc, const char** argv) {
+  edgentConsole.addCommand("sysinfo", []() {
     const int64_t t = esp_timer_get_time() / 1000000;
     unsigned secs = t % BLYNK_SECS_PER_MIN;
     unsigned mins = (t / BLYNK_SECS_PER_MIN) % BLYNK_SECS_PER_MIN;
@@ -132,6 +132,8 @@ void console_init()
     edgentConsole.printf("      min free:   %d\n",        ESP.getMinFreeHeap());
     if (ESP.getPsramSize()) {
       edgentConsole.printf(" PSRAM free:      %d / %d\n", ESP.getFreePsram(), ESP.getPsramSize());
+      edgentConsole.printf("      max alloc:  %d\n",      ESP.getMaxAllocPsram());
+      edgentConsole.printf("      min free:   %d\n",      ESP.getMinFreePsram());
     }
 #ifdef BLYNK_FS
     uint32_t fs_total = BLYNK_FS.totalBytes();
