@@ -1,11 +1,6 @@
 
 #include <Blynk/BlynkConsole.h>
 
-extern "C" {
-  #include "esp_partition.h"
-  #include "esp_ota_ops.h"
-}
-
 BlynkConsole    edgentConsole;
 
 void console_init()
@@ -117,15 +112,14 @@ void console_init()
   });
 
   edgentConsole.addCommand("sysinfo", []() {
-    const int64_t t = esp_timer_get_time() / 1000000;
-    unsigned secs = t % BLYNK_SECS_PER_MIN;
-    unsigned mins = (t / BLYNK_SECS_PER_MIN) % BLYNK_SECS_PER_MIN;
-    unsigned hrs  = (t % BLYNK_SECS_PER_DAY) / BLYNK_SECS_PER_HOUR;
-    unsigned days = t / BLYNK_SECS_PER_DAY;
-
-    edgentConsole.printf(" Uptime:          %dd %dh %dm %ds\n", days, hrs, mins, secs);
+    edgentConsole.printf(" Uptime:          %s\n",        timeSpanToStr(systemUptime() / 1000).c_str());
+    edgentConsole.printf(" Reset reason:    %s\n",        systemGetResetReason().c_str());
+    edgentConsole.printf("       graceful:  %lu / %lu\n", systemNoInitData.resetCount.graceful,
+                                                          systemNoInitData.resetCount.total);
     edgentConsole.printf(" Chip:            %s rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
-    edgentConsole.printf(" Flash:           %dK\n",       ESP.getFlashChipSize() / 1024);
+    edgentConsole.printf(" Flash:           %dK, %luM, %s\n", ESP.getFlashChipSize() / 1024,
+                                                          ESP.getFlashChipSpeed() / 1000000,
+                                                          systemGetFlashMode().c_str());
     edgentConsole.printf(" Stack unused:    %d\n",        uxTaskGetStackHighWaterMark(NULL));
     edgentConsole.printf(" Heap free:       %d / %d\n",   ESP.getFreeHeap(), ESP.getHeapSize());
     edgentConsole.printf("      max alloc:  %d\n",        ESP.getMaxAllocHeap());
@@ -139,6 +133,10 @@ void console_init()
     uint32_t fs_total = BLYNK_FS.totalBytes();
     edgentConsole.printf(" FS free:         %d / %d\n",   (fs_total-BLYNK_FS.usedBytes()), fs_total);
 #endif
+  });
+
+  edgentConsole.addCommand("coredump", []() {
+    systemPrintCoreDump(edgentConsole.getStream());
   });
 
 #ifdef BLYNK_FS
