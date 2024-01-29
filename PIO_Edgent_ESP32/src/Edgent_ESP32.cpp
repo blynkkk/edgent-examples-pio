@@ -37,6 +37,7 @@
 //#define USE_ESP32S2_DEV_KIT
 //#define USE_WROVER_BOARD
 //#define USE_TTGO_T7
+//#define USE_TTGO_T7_S3
 //#define USE_TTGO_T_OI
 
 #include "BlynkEdgent.h"

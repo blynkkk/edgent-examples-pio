@@ -63,9 +63,8 @@ void console_init()
   });
 
   edgentConsole.addCommand("wifi", [](int argc, const char* argv[]) {
-    Stream& output = edgentConsole.getStream();
     if (argc < 1 || 0 == strcmp(argv[0], "show")) {
-      output.printf(
+      edgentConsole.printf(
           "mac:%s ip:%s (%s [%s] %ddBm)\n",
           getWiFiMacAddress().c_str(),
           WiFi.localIP().toString().c_str(),
@@ -77,7 +76,7 @@ void console_init()
       int found = WiFi.scanNetworks();
       for (int i = 0; i < found; i++) {
         bool current = (WiFi.SSID(i) == WiFi.SSID());
-        output.printf(
+        edgentConsole.printf(
             "%s %s [%s] %s ch:%d rssi:%d\n",
             (current ? "*" : " "), WiFi.SSID(i).c_str(),
             macToString(WiFi.BSSID(i)).c_str(),
@@ -87,86 +86,83 @@ void console_init()
       }
       WiFi.scanDelete();
     } else {
-      output.println(F("Available commands: show, scan"));
+      edgentConsole.getStream().println(F("Available commands: show, scan"));
     }
   });
 
   edgentConsole.addCommand("firmware", [](int argc, const char** argv) {
-    Stream& output = edgentConsole.getStream();
     if (argc < 1 || 0 == strcmp(argv[0], "info")) {
       unsigned sketchSize = ESP.getSketchSize();
 
-      output.printf(" Version:   %s (build %s)\n", BLYNK_FIRMWARE_VERSION, __DATE__ " " __TIME__);
-      output.printf(" Type:      %s\n", BLYNK_FIRMWARE_TYPE);
-      output.printf(" Platform:  %s\n", BLYNK_INFO_DEVICE);
-      output.printf(" SDK:       %s\n", ESP.getSdkVersion());
+      edgentConsole.printf(" Version:   %s (build %s)\n", BLYNK_FIRMWARE_VERSION, __DATE__ " " __TIME__);
+      edgentConsole.printf(" Type:      %s\n", BLYNK_FIRMWARE_TYPE);
+      edgentConsole.printf(" Platform:  %s\n", BLYNK_INFO_DEVICE);
+      edgentConsole.printf(" SDK:       %s\n", ESP.getSdkVersion());
 
       if (const esp_partition_t* running = esp_ota_get_running_partition()) {
-        output.printf(" Partition: %s (%dK)\n", running->label, running->size / 1024);
-        output.printf(" App size:  %dK (%d%%)\n", sketchSize/1024, (sketchSize*100)/(running->size));
-        output.printf(" App MD5:   %s\n", ESP.getSketchMD5().c_str());
+        edgentConsole.printf(" Partition: %s (%dK)\n", running->label, running->size / 1024);
+        edgentConsole.printf(" App size:  %dK (%d%%)\n", sketchSize/1024, (sketchSize*100)/(running->size));
+        edgentConsole.printf(" App MD5:   %s\n", ESP.getSketchMD5().c_str());
       }
 
     } else if (0 == strcmp(argv[0], "rollback")) {
       if (Update.rollBack()) {
-        output.print(R"json({"status":"ok"})json" "\n");
+        edgentConsole.print(R"json({"status":"ok"})json" "\n");
         edgentTimer.setTimeout(50, systemReboot);
       } else {
-        output.print(R"json({"status":"error"})json" "\n");
+        edgentConsole.print(R"json({"status":"error"})json" "\n");
       }
     } else {
-      output.println(F("Available commands: info, rollback"));
+      edgentConsole.getStream().println(F("Available commands: info, rollback"));
     }
   });
 
   edgentConsole.addCommand("sysinfo", []() {
-    Stream& output = edgentConsole.getStream();
-    output.printf(" Uptime:          %s\n",        timeSpanToStr(systemUptime() / 1000).c_str());
-    output.printf(" Reset reason:    %s\n",        systemGetResetReason().c_str());
-    output.printf("       graceful:  %lu / %lu\n", systemNoInitData.resetCount.graceful,
+    edgentConsole.printf(" Uptime:          %s\n",        timeSpanToStr(systemUptime() / 1000).c_str());
+    edgentConsole.printf(" Reset reason:    %s\n",        systemGetResetReason().c_str());
+    edgentConsole.printf("       graceful:  %lu / %lu\n", systemNoInitData.resetCount.graceful,
                                                           systemNoInitData.resetCount.total);
-    output.printf(" Chip:            %s rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
-    output.printf(" Flash:           %dK, %luM, %s\n", ESP.getFlashChipSize() / 1024,
+    edgentConsole.printf(" Chip:            %s rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
+    edgentConsole.printf(" Flash:           %dK, %luM, %s\n", ESP.getFlashChipSize() / 1024,
                                                           ESP.getFlashChipSpeed() / 1000000,
                                                           systemGetFlashMode().c_str());
-    output.printf(" Stack unused:    %d\n",        uxTaskGetStackHighWaterMark(NULL));
-    output.printf(" Heap free:       %d / %d\n",   ESP.getFreeHeap(), ESP.getHeapSize());
-    output.printf("      max alloc:  %d\n",        ESP.getMaxAllocHeap());
-    output.printf("      min free:   %d\n",        ESP.getMinFreeHeap());
+    edgentConsole.printf(" Stack unused:    %d\n",        uxTaskGetStackHighWaterMark(NULL));
+    edgentConsole.printf(" Heap free:       %d / %d\n",   ESP.getFreeHeap(), ESP.getHeapSize());
+    edgentConsole.printf("      max alloc:  %d\n",        ESP.getMaxAllocHeap());
+    edgentConsole.printf("      min free:   %d\n",        ESP.getMinFreeHeap());
     if (ESP.getPsramSize()) {
-      output.printf(" PSRAM free:      %d / %d\n", ESP.getFreePsram(), ESP.getPsramSize());
-      output.printf("      max alloc:  %d\n",      ESP.getMaxAllocPsram());
-      output.printf("      min free:   %d\n",      ESP.getMinFreePsram());
+      edgentConsole.printf(" PSRAM free:      %d / %d\n", ESP.getFreePsram(), ESP.getPsramSize());
+      edgentConsole.printf("      max alloc:  %d\n",      ESP.getMaxAllocPsram());
+      edgentConsole.printf("      min free:   %d\n",      ESP.getMinFreePsram());
     }
 #ifdef BLYNK_FS
     uint32_t fs_total = BLYNK_FS.totalBytes();
-    output.printf(" FS free:         %d / %d\n",   (fs_total-BLYNK_FS.usedBytes()), fs_total);
+    edgentConsole.printf(" FS free:         %d / %d\n",   (fs_total-BLYNK_FS.usedBytes()), fs_total);
 #endif
   });
 
   edgentConsole.addCommand("sys", [](const BlynkParam &param) {
-    Stream& output = edgentConsole.getStream();
     const String tool = param[0].asStr();
     if (tool == "coredump") {
       const String cmd = param[1].asStr();
       if (cmd == "clear") {
         systemClearCoreDump();
       } else {
-        systemPrintCoreDump(output);
+        systemPrintCoreDump(edgentConsole.getStream());
       }
     } else if (tool == "partitions") {
       esp_partition_iterator_t it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, NULL);
       if (it) {
         do {
           const esp_partition_t* p = esp_partition_get(it);
-          output.printf("|  %02x  | %02x  | 0x%06X | 0x%06X | %-16s |\n",
+          edgentConsole.printf("|  %02x  | %02x  | 0x%06X | 0x%06X | %-16s |\n",
             p->type, p->subtype, p->address, p->size, p->label);
         } while (it = esp_partition_next(it));
       }
     } else if (tool == "powersave") {
       const String cmd = param[1].asStr();
       if (!param[1].isValid() || cmd == "show") {
-        output.printf("WiFi powersave: %s\n", WiFi.getSleep() ? "on" : "off");
+        edgentConsole.printf("WiFi powersave: %s\n", WiFi.getSleep() ? "on" : "off");
       } else if (cmd == "on") {
         WiFi.setSleep(true);
       } else if (cmd == "off") {
@@ -175,7 +171,7 @@ void console_init()
     } else if (tool == "nodelay") {
       const String cmd = param[1].asStr();
       if (!param[1].isValid() || cmd == "show") {
-        output.printf("TCP nodelay: %s\n", _blynkWifiClient.getNoDelay() ? "on" : "off");
+        edgentConsole.printf("TCP nodelay: %s\n", _blynkWifiClient.getNoDelay() ? "on" : "off");
       } else if (cmd == "on") {
         _blynkWifiClient.setNoDelay(true);
       } else if (cmd == "off") {
@@ -184,7 +180,7 @@ void console_init()
     } else if (tool == "cpufreq") {
       const String cmd = param[1].asStr();
       if (!param[1].isValid() || cmd == "show") {
-        output.printf("CPU freq: %lu MHz\n", getCpuFrequencyMhz());
+        edgentConsole.printf("CPU freq: %lu MHz\n", getCpuFrequencyMhz());
       } else {
         const unsigned freq = param[1].asInt();
         if (freq == 10 || freq ==  20 || freq ==  40 ||
@@ -196,7 +192,7 @@ void console_init()
     } else if (tool == "drop_stats") {
       systemNoInitData.clear();
     } else {
-      output.println(F("Available commands: coredump [show|clear], partitions, powersave [show|on|off], nodelay [show|on|off], cpufreq [show|N(MHz), drop_stats]"));
+      edgentConsole.getStream().println(F("Available commands: coredump [show|clear], partitions, powersave [show|on|off], nodelay [show|on|off], cpufreq [show|N(MHz), drop_stats]"));
     }
   });
 
