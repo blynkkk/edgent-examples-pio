@@ -86,13 +86,9 @@ protected:
 #elif defined(BOARD_LED_PIN_R)     // Normal RGB LED (common anode or common cathode)
 
   void initLED() {
-    ledcAttachPin(BOARD_LED_PIN_R, BOARD_LEDC_CHANNEL_1);
-    ledcAttachPin(BOARD_LED_PIN_G, BOARD_LEDC_CHANNEL_2);
-    ledcAttachPin(BOARD_LED_PIN_B, BOARD_LEDC_CHANNEL_3);
-
-    ledcSetup(BOARD_LEDC_CHANNEL_1, BOARD_LEDC_BASE_FREQ, BOARD_LEDC_TIMER_BITS);
-    ledcSetup(BOARD_LEDC_CHANNEL_2, BOARD_LEDC_BASE_FREQ, BOARD_LEDC_TIMER_BITS);
-    ledcSetup(BOARD_LEDC_CHANNEL_3, BOARD_LEDC_BASE_FREQ, BOARD_LEDC_TIMER_BITS);
+    pinMode(BOARD_LED_PIN_R, OUTPUT);
+    pinMode(BOARD_LED_PIN_G, OUTPUT);
+    pinMode(BOARD_LED_PIN_B, OUTPUT);
   }
 
   void setRGB(uint32_t color) {
@@ -100,28 +96,27 @@ protected:
     uint8_t g = (color & 0x00FF00) >> 8;
     uint8_t b = (color & 0x0000FF);
     #if BOARD_LED_INVERSE
-    ledcWrite(BOARD_LEDC_CHANNEL_1, TO_PWM(255 - r));
-    ledcWrite(BOARD_LEDC_CHANNEL_2, TO_PWM(255 - g));
-    ledcWrite(BOARD_LEDC_CHANNEL_3, TO_PWM(255 - b));
+    analogWrite(BOARD_LED_PIN_R, TO_PWM(255 - r));
+    analogWrite(BOARD_LED_PIN_G, TO_PWM(255 - g));
+    analogWrite(BOARD_LED_PIN_B, TO_PWM(255 - b));
     #else
-    ledcWrite(BOARD_LEDC_CHANNEL_1, TO_PWM(r));
-    ledcWrite(BOARD_LEDC_CHANNEL_2, TO_PWM(g));
-    ledcWrite(BOARD_LEDC_CHANNEL_3, TO_PWM(b));
+    analogWrite(BOARD_LED_PIN_R, TO_PWM(r));
+    analogWrite(BOARD_LED_PIN_G, TO_PWM(g));
+    analogWrite(BOARD_LED_PIN_B, TO_PWM(b));
     #endif
   }
 
 #elif defined(BOARD_LED_PIN)       // Single color LED
 
   void initLED() {
-    ledcSetup(BOARD_LEDC_CHANNEL_1, BOARD_LEDC_BASE_FREQ, BOARD_LEDC_TIMER_BITS);
-    ledcAttachPin(BOARD_LED_PIN, BOARD_LEDC_CHANNEL_1);
+    pinMode(BOARD_LED_PIN, OUTPUT);
   }
 
   void setLED(uint32_t color) {
     #if BOARD_LED_INVERSE
-    ledcWrite(BOARD_LEDC_CHANNEL_1, TO_PWM(255 - color));
+    analogWrite(BOARD_LED_PIN, TO_PWM(255 - color));
     #else
-    ledcWrite(BOARD_LEDC_CHANNEL_1, TO_PWM(color));
+    analogWrite(BOARD_LED_PIN, TO_PWM(color));
     #endif
   }
 

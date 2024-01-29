@@ -16,14 +16,6 @@ void console_init()
     edgentTimer.setTimeout(50, systemReboot);
   });
 
-  edgentConsole.addCommand("config", [](int argc, const char** argv) {
-    if (argc < 1 || 0 == strcmp(argv[0], "start")) {
-      BlynkState::set(MODE_WAIT_CONFIG);
-    } else if (0 == strcmp(argv[0], "erase")) {
-      BlynkState::set(MODE_RESET_CONFIG);
-    }
-  });
-
   edgentConsole.addCommand("devinfo", []() {
     edgentConsole.printf(
         R"json({"name":"%s","board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s","uid":"%s"})json" "\n",
@@ -60,6 +52,16 @@ void console_init()
     BlynkState::set(MODE_SWITCH_TO_STA);
   });
 
+  edgentConsole.addCommand("config", [](int argc, const char** argv) {
+    if (argc < 1 || 0 == strcmp(argv[0], "start")) {
+      BlynkState::set(MODE_WAIT_CONFIG);
+    } else if (0 == strcmp(argv[0], "erase")) {
+      BlynkState::set(MODE_RESET_CONFIG);
+    } else {
+      edgentConsole.println("Available commands: start, erase");
+    }
+  });
+
   edgentConsole.addCommand("wifi", [](int argc, const char* argv[]) {
     if (argc < 1 || 0 == strcmp(argv[0], "show")) {
       edgentConsole.printf(
@@ -83,6 +85,8 @@ void console_init()
         );
       }
       WiFi.scanDelete();
+    } else {
+      edgentConsole.println("Available commands: show, scan");
     }
   });
 
@@ -108,6 +112,8 @@ void console_init()
       } else {
         edgentConsole.print(R"json({"status":"error"})json" "\n");
       }
+    } else {
+      edgentConsole.println("Available commands: info, rollback");
     }
   });
 
@@ -135,8 +141,59 @@ void console_init()
 #endif
   });
 
-  edgentConsole.addCommand("coredump", []() {
-    systemPrintCoreDump(edgentConsole.getStream());
+  edgentConsole.addCommand("sys", [](const BlynkParam &param) {
+    const String tool = param[0].asStr();
+    if (tool == "coredump") {
+      const String cmd = param[1].asStr();
+      if (cmd == "clear") {
+        systemClearCoreDump();
+      } else {
+        systemPrintCoreDump(edgentConsole.getStream());
+      }
+    } else if (tool == "partitions") {
+      esp_partition_iterator_t it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, NULL);
+      if (it) {
+        do {
+          const esp_partition_t* p = esp_partition_get(it);
+          edgentConsole.printf("|  %02x  | %02x  | 0x%06X | 0x%06X | %-16s |\n",
+            p->type, p->subtype, p->address, p->size, p->label);
+        } while (it = esp_partition_next(it));
+      }
+    } else if (tool == "powersave") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("WiFi powersave: %s\n", WiFi.getSleep() ? "on" : "off");
+      } else if (cmd == "on") {
+        WiFi.setSleep(true);
+      } else if (cmd == "off") {
+        WiFi.setSleep(false);
+      }
+    } else if (tool == "nodelay") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("TCP nodelay: %s\n", _blynkWifiClient.getNoDelay() ? "on" : "off");
+      } else if (cmd == "on") {
+        _blynkWifiClient.setNoDelay(true);
+      } else if (cmd == "off") {
+        _blynkWifiClient.setNoDelay(false);
+      }
+    } else if (tool == "cpufreq") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("CPU freq: %lu MHz\n", getCpuFrequencyMhz());
+      } else {
+        const unsigned freq = param[1].asInt();
+        if (freq == 10 || freq ==  20 || freq ==  40 ||
+            freq == 80 || freq == 160 || freq == 240)
+        {
+          setCpuFrequencyMhz(freq);
+        }
+      }
+    } else if (tool == "drop_stats") {
+      systemNoInitData.clear();
+    } else {
+      edgentConsole.println("Available commands: coredump [show|clear], partitions, powersave [show|on|off], nodelay [show|on|off], cpufreq [show|N(MHz), drop_stats]");
+    }
   });
 
 #ifdef BLYNK_FS

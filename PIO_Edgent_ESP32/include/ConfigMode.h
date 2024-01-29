@@ -4,12 +4,9 @@
 #include <DNSServer.h>
 #include <Update.h>
 
-#ifndef BLYNK_FS
-
-  const char* config_form = R"html(
+static const char configForm[] PROGMEM = R"html(
 <!DOCTYPE HTML>
-<html>
-<head>
+<html><head>
   <title>WiFi setup</title>
   <style>
   body {
@@ -37,25 +34,21 @@
   input[name="port"] { width: 5em; }
   input[type="submit"], img { margin: auto; display: block; width: 30%; }
   </style>
-</head> 
-<body>
+</head><body>
 <div class="centered">
   <form method="get" action="config">
+    <input type="hidden" name="if" value="wifi">
     <table>
-    <tr><td><label for="ssid">WiFi SSID:</label></td>  <td><input type="text" name="ssid" length=64 required="required"></td></tr>
-    <tr><td><label for="pass">Password:</label></td>   <td><input type="text" name="pass" length=64></td></tr>
-    <tr><td><label for="blynk">Auth token:</label></td><td><input type="text" name="blynk" placeholder="a0b1c2d..." pattern="[-_a-zA-Z0-9]{32}" maxlength="32" required="required"></td></tr>
-    <tr><td><label for="host">Host:</label></td>       <td><input type="text" name="host" value="blynk.cloud" length=64></td></tr>
-    <tr><td><label for="port_ssl">Port:</label></td>   <td><input type="number" name="port_ssl" value="443" min="1" max="65535"></td></tr>
+    <tr><td><label for="ssid">WiFi network:</label></td>  <td><input type="text" name="ssid" maxlength=64 required="required"></td></tr>
+    <tr><td><label for="pass">WiFi password:</label></td> <td><input type="text" name="pass" maxlength=64></td></tr>
+    <tr><td><label for="blynk">Auth token:</label></td>   <td><input type="text" name="blynk" placeholder="a0b1c2d..." pattern="[-_a-zA-Z0-9]{32}" minlength="32" maxlength="32" required="required"></td></tr>
+    <tr><td><label for="host">Server:</label></td>        <td><input type="text" name="host" value="" maxlength=64 required="required"></td></tr>
     </table><br/>
     <input type="submit" value="Apply">
   </form>
 </div>
-</body>
-</html>
+</body></html>
 )html";
-
-#endif
 
 WebServer server(80);
 DNSServer dnsServer;
@@ -64,13 +57,14 @@ const byte DNS_PORT = 53;
 static int connectNetRetries    = WIFI_CLOUD_MAX_RETRIES;
 static int connectBlynkRetries  = WIFI_CLOUD_MAX_RETRIES;
 
-static const char serverUpdateForm[] PROGMEM =
-  R"(<html><body>
-      <form method='POST' action='' enctype='multipart/form-data'>
-        <input type='file' name='update'>
-        <input type='submit' value='Update'>
-      </form>
-    </body></html>)";
+static const char serverUpdateForm[] PROGMEM = R"html(
+<html><body>
+  <form method='POST' action='' enctype='multipart/form-data'>
+    <input type='file' name='update'>
+    <input type='submit' value='Update'>
+  </form>
+</body></html>
+)html";
 
 static inline
 String macToString(byte mac[6]) {
@@ -180,11 +174,6 @@ void enterConfigMode()
       }
     }
   });
-#ifndef BLYNK_FS
-  server.on("/", []() {
-    server.send(200, "text/html", config_form);
-  });
-#endif
   server.on("/config", []() {
     DEBUG_PRINT("Applying configuration...");
     String ssid = server.arg("ssid");
@@ -349,10 +338,17 @@ void enterConfigMode()
   });
 
 #ifdef BLYNK_FS
-  server.serveStatic("/img/favicon.png", BLYNK_FS, "/img/favicon.png");
-  server.serveStatic("/img/logo.png", BLYNK_FS, "/img/logo.png");
-  server.serveStatic("/", BLYNK_FS, "/index.html");
+  if (BLYNK_FS.exists("/index.html")) {
+    server.serveStatic("/img/favicon.png", BLYNK_FS, "/img/favicon.png");
+    server.serveStatic("/img/logo.png", BLYNK_FS, "/img/logo.png");
+    server.serveStatic("/", BLYNK_FS, "/index.html");
+  } else
 #endif
+  {
+    server.on("/", []() {
+      server.send(200, "text/html", configForm);
+    });
+  }
 
   server.begin();
 

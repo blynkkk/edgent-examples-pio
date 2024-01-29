@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Preferences.h>
+#include <Print.h>
 
 extern "C" {
   #include "esp_partition.h"
@@ -25,6 +26,84 @@ extern "C" {
   #endif
 }
 
+static char BASE64[65] PROGMEM = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+class Base64Writer
+  : public Print
+{
+public:
+
+  Base64Writer(Print &stream) : _stream(stream) {}
+
+  void setWidth(int w) { _width = w; }
+  void setDelay(unsigned t) { _delay = t; }
+
+  ~Base64Writer() {
+    flush();
+  }
+
+  virtual void flush() override {
+    if (!_cur) return;
+    convert();
+    switch (_cur){
+      case 1: _data[2] = '=';
+      case 2: _data[3] = '=';
+    }
+    step();
+    _stream.flush();
+  }
+
+  virtual size_t write(uint8_t b) override {
+    if (_cur == 3) {
+      convert();
+      step();
+    }
+    _data[_cur++] = b;
+    return 1;
+  }
+
+  using Print::write;
+
+protected:
+
+  void step() {
+    _stream.write(_data, 4);
+    memset(_data, 0, 4);
+    _cur = 0;
+    if (_width) {
+      _col += 4;
+      if (_col >= _width) {
+        _stream.write('\n');
+        _col = 0;
+        if (_delay) { delay(_delay); };
+      }
+    }
+  }
+  void convert() {
+    union{
+      uint8_t input[3];
+      struct {
+        unsigned int D : 0x06;
+        unsigned int C : 0x06;
+        unsigned int B : 0x06;
+        unsigned int A : 0x06;
+      } output;
+    } B64C = { { _data[2], _data[1], _data[0] } };
+
+    _data[0] = pgm_read_byte(&BASE64[B64C.output.A]);
+    _data[1] = pgm_read_byte(&BASE64[B64C.output.B]);
+    _data[2] = pgm_read_byte(&BASE64[B64C.output.C]);
+    _data[3] = pgm_read_byte(&BASE64[B64C.output.D]);
+  }
+
+  uint8_t   _data[4];
+  Print&    _stream;
+  char      _cur = 0;
+  int       _width = 0, _col = 0;
+  unsigned  _delay = 0;
+
+};
+
 static inline
 String timeSpanToStr(const uint64_t t) {
   unsigned secs = t % 60;
@@ -40,7 +119,7 @@ String timeSpanToStr(const uint64_t t) {
 static inline
 String encodeUniquePart(uint32_t n, unsigned len)
 {
-  static constexpr char alphabet[] = { "0W8N4Y1HP5DF9K6JM3C2UA7R" };
+  static constexpr char alphabet[] = { "0W8N4Y1HP5DF9K6JM3C2XA7R" };
   static constexpr int base = sizeof(alphabet)-1;
 
   char buf[16] = { 0, };
@@ -101,11 +180,26 @@ String getDeviceRandomSuffix(unsigned size)
 }
 
 static
+void systemInit()
+{
+#if defined(BLYNK_USE_LITTLEFS)
+  const esp_partition_t* lfs_pt = esp_partition_find_first(
+                ESP_PARTITION_TYPE_DATA,
+                ESP_PARTITION_SUBTYPE_DATA_SPIFFS, NULL);
+  if (lfs_pt) {
+    LittleFS.begin(true, "/lfs", 5, lfs_pt->label);
+  }
+#elif defined(BLYNK_USE_SPIFFS)
+  SPIFFS.begin(true);
+#endif
+}
+
+static
 String systemGetDeviceName(bool withPrefix = true)
 {
   String devUnique = getDeviceRandomSuffix(4);
   String devPrefix = CONFIG_DEVICE_PREFIX;
-  const int maxTmplName = 31 - (2 + devPrefix.length() + devUnique.length());
+  const int maxTmplName = 29 - (2 + devPrefix.length() + devUnique.length());
   String devName = String(BLYNK_TEMPLATE_NAME).substring(0, maxTmplName);
   if (withPrefix) {
     if (devName.length()) {
@@ -181,15 +275,22 @@ public:
 
 public:
   SysNoInit() {
-    if (_magic != MAGIC) {
-      memset(this, 0, sizeof(SysNoInit));
-      _magic = MAGIC;
+    if (_magic != expectedMagic()) {
+      clear();
     } else {
       resetCount.total++;
     }
   }
 
+  void clear() {
+    memset(this, 0, sizeof(SysNoInit));
+    _magic = expectedMagic();
+  }
+
 private:
+  static uint32_t expectedMagic() {
+    return (MAGIC + __LINE__ + sizeof(SysNoInit));
+  }
   static const uint32_t MAGIC = 0x2f5385a4;
   uint32_t _magic;
 } systemNoInitData;
@@ -267,53 +368,50 @@ String systemGetFlashMode() {
 }
 
 static
+bool systemHasCoreDump()
+{
+  size_t size = 0;
+  size_t address = 0;
+  return (esp_core_dump_image_get(&address, &size) == ESP_OK);
+}
+
+static
 void systemPrintCoreDump(Stream& stream)
 {
   size_t size = 0;
   size_t address = 0;
-  if (esp_core_dump_image_get(&address, &size) == ESP_OK)
-  {
-    const esp_partition_t *pt = NULL;
+  if (esp_core_dump_image_get(&address, &size) == ESP_OK) {
+    const esp_partition_t* pt = NULL;
     pt = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_COREDUMP, "coredump");
-
-    if (pt != NULL)
-    {
+    if (pt) {
       uint8_t bf[256];
-      char str_dst[640];
-      int16_t toRead;
+      Base64Writer b64(stream);
+      b64.setWidth(120);
+      b64.setDelay(10);
 
-      for (int16_t i = 0; i < (size / 256) + 1; i++)
-      {
-        strcpy(str_dst, "");
-        toRead = (size - i * 256) > 256 ? 256 : (size - i * 256);
-
+      stream.println(F("================= CORE DUMP START ================="));
+      for (int16_t i = 0; i < (size / 256) + 1; i++) {
+        int16_t toRead = (size - i * 256) > 256 ? 256 : (size - i * 256);
         esp_err_t er = esp_partition_read(pt, i * 256, bf, toRead);
-        if (er != ESP_OK)
-        {
+        if (er == ESP_OK) {
+          b64.write(bf, 256);
+        } else {
           stream.printf("FAIL [%x]\n",er);
-          break;
         }
-
-        for (int16_t j = 0; j < 256; j++)
-        {
-          char str_tmp[3];
-
-          sprintf(str_tmp, "%02x", bf[j]);
-          strcat(str_dst, str_tmp);
-        }
-
-        printf("%s", str_dst);
       }
+      b64.flush();
+      stream.println(F("\n================= CORE DUMP END ==================="));
+    } else {
+      stream.println(F("Partition NULL"));
     }
-    else
-    {
-      stream.println("Partition NULL");
-    }
-    esp_core_dump_image_erase();
+  } else {
+    stream.println(F("No coredump found"));
   }
-  else
-  {
-    stream.println("esp_core_dump_image_get() FAIL");
-  }
+}
+
+static
+void systemClearCoreDump()
+{
+  esp_core_dump_image_erase();
 }
 

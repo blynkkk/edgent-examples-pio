@@ -102,9 +102,7 @@ public:
     WiFi.setMinSecurity(WIFI_AUTH_WEP);
 #endif
 
-#ifdef BLYNK_FS
-    BLYNK_FS.begin(true);
-#endif
+    systemInit();
 
     indicator_init();
     button_init();
