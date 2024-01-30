@@ -344,7 +344,7 @@ void enterConfigMode()
     server.serveStatic("/", BLYNK_FS, "/index.html");
   } else
 #endif
-  {
+  { /* if no BLYNK_FS or index.html not found */
     server.on("/", []() {
       server.send(200, "text/html", configForm);
     });

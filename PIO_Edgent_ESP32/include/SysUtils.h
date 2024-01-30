@@ -275,11 +275,15 @@ public:
 
 public:
   SysNoInit() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     if (_magic != expectedMagic()) {
       clear();
     } else {
       resetCount.total++;
     }
+#pragma GCC diagnostic pop
   }
 
   void clear() {
