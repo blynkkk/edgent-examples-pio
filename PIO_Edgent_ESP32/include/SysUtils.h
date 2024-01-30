@@ -3,6 +3,18 @@
 #include <Preferences.h>
 #include <Print.h>
 
+#if defined(BLYNK_USE_LITTLEFS)
+  #include <LittleFS.h>
+  #define BLYNK_FS LittleFS
+#elif defined(BLYNK_USE_SPIFFS)
+  #if defined(ESP32)
+    #include <SPIFFS.h>
+  #elif defined(ESP8266)
+    #include <FS.h>
+  #endif
+  #define BLYNK_FS SPIFFS
+#endif
+
 extern "C" {
   #include "esp_partition.h"
   #include "esp_ota_ops.h"

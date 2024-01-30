@@ -112,6 +112,11 @@ String getWiFiNetworkBSSID() {
   return WiFi.BSSIDstr();
 }
 
+static
+void handleRoot() {
+  server.send(200, "text/html", configForm);
+}
+
 void enterConfigMode()
 {
   WiFi.mode(WIFI_OFF);
@@ -345,9 +350,7 @@ void enterConfigMode()
   } else
 #endif
   { /* if no BLYNK_FS or index.html not found */
-    server.on("/", []() {
-      server.send(200, "text/html", configForm);
-    });
+    server.on("/", handleRoot);
   }
 
   server.begin();

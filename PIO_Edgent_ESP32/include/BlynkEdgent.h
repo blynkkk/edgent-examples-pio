@@ -6,18 +6,6 @@ extern "C" {
 #include "Settings.h"
 #include <BlynkSimpleEsp32_SSL.h>
 
-#if defined(BLYNK_USE_LITTLEFS)
-  #include <LittleFS.h>
-  #define BLYNK_FS LittleFS
-#elif defined(BLYNK_USE_SPIFFS)
-  #if defined(ESP32)
-    #include <SPIFFS.h>
-  #elif defined(ESP8266)
-    #include <FS.h>
-  #endif
-  #define BLYNK_FS SPIFFS
-#endif
-
 #ifndef BLYNK_NEW_LIBRARY
 #error "Old version of Blynk library is in use. Please replace it with the new one."
 #endif
