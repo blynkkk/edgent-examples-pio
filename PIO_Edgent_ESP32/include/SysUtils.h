@@ -6,13 +6,24 @@
 #if defined(BLYNK_USE_LITTLEFS)
   #include <LittleFS.h>
   #define BLYNK_FS LittleFS
-#elif defined(BLYNK_USE_SPIFFS)
-  #if defined(ESP32)
-    #include <SPIFFS.h>
-  #elif defined(ESP8266)
-    #include <FS.h>
-  #endif
+#elif defined(BLYNK_USE_SPIFFS) && defined(ESP32)
+  #include <SPIFFS.h>
   #define BLYNK_FS SPIFFS
+#elif defined(BLYNK_USE_SPIFFS) && defined(ESP8266)
+  #include <FS.h>
+  #define BLYNK_FS SPIFFS
+  #define FILE_READ  "r"
+  #define FILE_WRITE "w"
+#endif
+
+#if defined(BLYNK_NOINIT_ATTR)
+  // OK, use it
+#elif defined(ESP32)
+  #define BLYNK_NOINIT_ATTR __NOINIT_ATTR //RTC_NOINIT_ATTR
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_SAMD)
+  #define BLYNK_NOINIT_ATTR __attribute__((section(".noinit")))
+#else
+  #error "BLYNK_NOINIT_ATTR is not defined"
 #endif
 
 extern "C" {
@@ -276,9 +287,8 @@ String systemGetDeviceUID() {
   return result;
 }
 
-__NOINIT_ATTR
-//RTC_NOINIT_ATTR
-class SysNoInit {
+BLYNK_NOINIT_ATTR
+class SystemStats {
 public:
   struct {
     uint32_t total;
@@ -286,7 +296,7 @@ public:
   } resetCount;
 
 public:
-  SysNoInit() {
+  SystemStats() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -299,17 +309,17 @@ public:
   }
 
   void clear() {
-    memset(this, 0, sizeof(SysNoInit));
+    memset(this, 0, sizeof(SystemStats));
     _magic = expectedMagic();
   }
 
 private:
   static uint32_t expectedMagic() {
-    return (MAGIC + __LINE__ + sizeof(SysNoInit));
+    return (MAGIC + __LINE__ + sizeof(SystemStats));
   }
   static const uint32_t MAGIC = 0x2f5385a4;
   uint32_t _magic;
-} systemNoInitData;
+} systemStats;
 
 static inline
 uint64_t systemUptime() {
@@ -327,7 +337,7 @@ uint64_t systemUptime() {
 
 static inline
 void systemReboot() {
-  systemNoInitData.resetCount.graceful++;
+  systemStats.resetCount.graceful++;
   delay(50);
 #if defined(ESP32) || defined(ESP8266)
   ESP.restart();

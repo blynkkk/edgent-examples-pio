@@ -120,8 +120,8 @@ void console_init()
   edgentConsole.addCommand("sysinfo", []() {
     edgentConsole.printf(" Uptime:          %s\n",        timeSpanToStr(systemUptime() / 1000).c_str());
     edgentConsole.printf(" Reset reason:    %s\n",        systemGetResetReason().c_str());
-    edgentConsole.printf("       graceful:  %lu / %lu\n", systemNoInitData.resetCount.graceful,
-                                                          systemNoInitData.resetCount.total);
+    edgentConsole.printf("       graceful:  %lu / %lu\n", systemStats.resetCount.graceful,
+                                                          systemStats.resetCount.total);
     edgentConsole.printf(" Chip:            %s rev %d\n", ESP.getChipModel(), ESP.getChipRevision());
     edgentConsole.printf(" Flash:           %dK, %luM, %s\n", ESP.getFlashChipSize() / 1024,
                                                           ESP.getFlashChipSpeed() / 1000000,
@@ -190,7 +190,7 @@ void console_init()
         }
       }
     } else if (tool == "drop_stats") {
-      systemNoInitData.clear();
+      systemStats.clear();
     } else {
       edgentConsole.getStream().println(F("Available commands: coredump [show|clear], partitions, powersave [show|on|off], nodelay [show|on|off], cpufreq [show|N(MHz), drop_stats]"));
     }
