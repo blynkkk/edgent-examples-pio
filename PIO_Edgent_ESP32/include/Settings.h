@@ -98,12 +98,6 @@
 
 #define BOARD_PWM_MAX                 1023
 
-#define BOARD_LEDC_CHANNEL_1          1
-#define BOARD_LEDC_CHANNEL_2          2
-#define BOARD_LEDC_CHANNEL_3          3
-#define BOARD_LEDC_TIMER_BITS         10
-#define BOARD_LEDC_BASE_FREQ          12000
-
 #if !defined(CONFIG_DEVICE_PREFIX)
 #define CONFIG_DEVICE_PREFIX          "Blynk"
 #endif
