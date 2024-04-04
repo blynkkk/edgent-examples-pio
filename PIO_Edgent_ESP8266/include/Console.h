@@ -13,22 +13,13 @@ void console_init()
 
   edgentConsole.addCommand("reboot", []() {
     edgentConsole.print(R"json({"status":"OK","msg":"rebooting wifi module"})json" "\n");
-    delay(100);
-    restartMCU();
-  });
-
-  edgentConsole.addCommand("config", [](int argc, const char** argv) {
-    if (argc < 1 || 0 == strcmp(argv[0], "start")) {
-      BlynkState::set(MODE_WAIT_CONFIG);
-    } else if (0 == strcmp(argv[0], "erase")) {
-      BlynkState::set(MODE_RESET_CONFIG);
-    }
+    edgentTimer.setTimeout(50, systemReboot);
   });
 
   edgentConsole.addCommand("devinfo", []() {
     edgentConsole.printf(
         R"json({"name":"%s","board":"%s","tmpl_id":"%s","fw_type":"%s","fw_ver":"%s"})json" "\n",
-        getWiFiName().c_str(),
+        systemGetDeviceName().c_str(),
         BLYNK_TEMPLATE_NAME,
         BLYNK_TEMPLATE_ID,
         BLYNK_FIRMWARE_TYPE,
@@ -60,6 +51,16 @@ void console_init()
     BlynkState::set(MODE_SWITCH_TO_STA);
   });
 
+  edgentConsole.addCommand("config", [](int argc, const char** argv) {
+    if (argc < 1 || 0 == strcmp(argv[0], "start")) {
+      BlynkState::set(MODE_WAIT_CONFIG);
+    } else if (0 == strcmp(argv[0], "erase")) {
+      BlynkState::set(MODE_RESET_CONFIG);
+    } else {
+      edgentConsole.getStream().println(F("Available commands: start, erase"));
+    }
+  });
+
   edgentConsole.addCommand("wifi", [](int argc, const char* argv[]) {
     if (argc < 1 || 0 == strcmp(argv[0], "show")) {
       edgentConsole.printf(
@@ -83,6 +84,8 @@ void console_init()
         );
       }
       WiFi.scanDelete();
+    } else {
+      edgentConsole.getStream().println(F("Available commands: show, scan"));
     }
   });
 
@@ -100,31 +103,64 @@ void console_init()
       edgentConsole.printf(" App size:  %dK (%d%%)\n", sketchSize/1024, (sketchSize*100)/partSize);
       edgentConsole.printf(" App MD5:   %s\n", ESP.getSketchMD5().c_str());
 
+    } else {
+      edgentConsole.getStream().println(F("Available commands: info"));
     }
   });
 
-  edgentConsole.addCommand("status", [](int argc, const char** argv) {
-    const uint64_t t = micros64() / 1000000;
-    unsigned secs = t % BLYNK_SECS_PER_MIN;
-    unsigned mins = (t / BLYNK_SECS_PER_MIN) % BLYNK_SECS_PER_MIN;
-    unsigned hrs  = (t % BLYNK_SECS_PER_DAY) / BLYNK_SECS_PER_HOUR;
-    unsigned days = t / BLYNK_SECS_PER_DAY;
-
-    uint32_t heap_free; uint16_t heap_max;
+  edgentConsole.addCommand("sysinfo", [](int argc, const char** argv) {
+    uint32_t heap_free, heap_max;
     uint8_t heap_frag;
     ESP.getHeapStats(&heap_free, &heap_max, &heap_frag);
-    edgentConsole.printf(" Uptime:          %dd %dh %dm %ds\n", days, hrs, mins, secs);
-    edgentConsole.printf(" Reset reason:    %s\n",        ESP.getResetReason().c_str());
-    edgentConsole.printf(" Flash:           %dK\n",       ESP.getFlashChipSize() / 1024);
+
+    edgentConsole.printf(" Uptime:          %s\n",        timeSpanToStr(systemUptime() / 1000).c_str());
+    edgentConsole.printf(" Reset reason:    %s\n",        systemGetResetReason().c_str());
+    edgentConsole.printf("       graceful:  %lu / %lu\n", systemStats.resetCount.graceful,
+                                                          systemStats.resetCount.total);
+    edgentConsole.printf(" Flash:           %dK, %luM, %s\n", ESP.getFlashChipSize() / 1024,
+                                                          ESP.getFlashChipSpeed() / 1000000,
+                                                          systemGetFlashMode().c_str());
     edgentConsole.printf(" Stack unused:    %d\n",        ESP.getFreeContStack());
     edgentConsole.printf(" Heap free:       %d / %d\n",   heap_free, heap_max);
-    edgentConsole.printf("      fragment:   %d\n",        heap_frag);
     edgentConsole.printf("      max alloc:  %d\n",        ESP.getMaxFreeBlockSize());
+    edgentConsole.printf("      fragment:   %d\n",        heap_frag);
 #ifdef BLYNK_FS
     FSInfo fs_info;
     BLYNK_FS.info(fs_info);
     edgentConsole.printf(" FS free:         %d / %d\n",   (fs_info.totalBytes-fs_info.usedBytes), fs_info.totalBytes);
 #endif
+  });
+
+  edgentConsole.addCommand("sys", [](const BlynkParam &param) {
+    const String tool = param[0].asStr();
+    if (tool == "powersave") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("WiFi powersave: %s\n", WiFi.getSleep() ? "on" : "off");
+      } else if (cmd == "on") {
+        WiFi.setSleep(true);
+      } else if (cmd == "off") {
+        WiFi.setSleep(false);
+      }
+    } else if (tool == "nodelay") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("TCP nodelay: %s\n", _blynkWifiClient.getNoDelay() ? "on" : "off");
+      } else if (cmd == "on") {
+        _blynkWifiClient.setNoDelay(true);
+      } else if (cmd == "off") {
+        _blynkWifiClient.setNoDelay(false);
+      }
+    } else if (tool == "cpufreq") {
+      const String cmd = param[1].asStr();
+      if (!param[1].isValid() || cmd == "show") {
+        edgentConsole.printf("CPU freq: %lu MHz\n", ESP.getCpuFreqMHz());
+      }
+    } else if (tool == "drop_stats") {
+      systemStats.clear();
+    } else {
+      edgentConsole.getStream().println(F("Available commands: powersave [show|on|off], nodelay [show|on|off], cpufreq, drop_stats"));
+    }
   });
 
 #ifdef BLYNK_FS
@@ -133,7 +169,7 @@ void console_init()
     const char* path = (argc < 1) ? "/" : argv[0];
     Dir dir = BLYNK_FS.openDir(path);
     while (dir.next()) {
-      File f = dir.openFile(BLYNK_FILE_READ);
+      File f = dir.openFile(FILE_READ);
 
       MD5Builder md5;
       md5.begin();
@@ -176,7 +212,7 @@ void console_init()
       return;
     }
 
-    if (File f = BLYNK_FS.open(argv[0], BLYNK_FILE_READ)) {
+    if (File f = BLYNK_FS.open(argv[0], FILE_READ)) {
       while (f.available()) {
         edgentConsole.print((char)f.read());
       }
@@ -189,7 +225,7 @@ void console_init()
   edgentConsole.addCommand("echo", [](int argc, const char** argv) {
     if (argc != 2) return;
 
-    if (File f = BLYNK_FS.open(argv[1], BLYNK_FILE_WRITE)) {
+    if (File f = BLYNK_FS.open(argv[1], FILE_WRITE)) {
       if (!f.print(argv[0])) {
         edgentConsole.print("Cannot write file\n");
       }

@@ -89,6 +89,8 @@
 //#define USE_TIMER_FIVE
 //#define USE_PTHREAD
 
+// Disable built-in analog and digital pin control
+#define BLYNK_NO_BUILTIN
 #define BLYNK_NO_DEFAULT_BANNER
 
 #if defined(APP_DEBUG)

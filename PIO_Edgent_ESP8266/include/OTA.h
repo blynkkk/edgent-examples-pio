@@ -1,5 +1,5 @@
 
-#define OTA_FATAL(...) { BLYNK_LOG1(__VA_ARGS__); delay(1000); restartMCU(); }
+#define OTA_FATAL(...) { BLYNK_LOG1(__VA_ARGS__); delay(1000); systemReboot(); }
 
 #define USE_SSL
 
@@ -9,6 +9,12 @@ extern BlynkTimer edgentTimer;
 
 BLYNK_WRITE(InternalPinOTA) {
   overTheAirURL = param.asString();
+#if defined(ESP8266)
+    // Use HTTP by default
+    if (!overTheAirURL.endsWith("&s=1")) {
+       overTheAirURL.replace("https://", "http://");
+    }
+#endif
 
   edgentTimer.setTimeout(2000L, [](){
     // Start OTA
@@ -261,6 +267,6 @@ void enterOTA() {
   }
 
   DEBUG_PRINT("=== Update successfully completed. Rebooting.");
-  restartMCU();
+  systemReboot();
 }
 

@@ -3,27 +3,10 @@ extern "C" {
   #include "user_interface.h"
 
   void app_loop();
-  void restartMCU();
 }
 
 #include "Settings.h"
 #include <BlynkSimpleEsp8266_SSL.h>
-
-#if defined(BLYNK_USE_LITTLEFS)
-  #include <LittleFS.h>
-  #define BLYNK_FS LittleFS
-#elif defined(BLYNK_USE_SPIFFS)
-  #if defined(ESP32)
-    #include <SPIFFS.h>
-  #elif defined(ESP8266)
-    #include <FS.h>
-  #endif
-  #define BLYNK_FS SPIFFS
-#endif
-#if defined(BLYNK_FS) && defined(ESP8266)
-  #define BLYNK_FILE_READ  "r"
-  #define BLYNK_FILE_WRITE "w"
-#endif
 
 #ifndef BLYNK_NEW_LIBRARY
 #error "Old version of Blynk library is in use. Please replace it with the new one."
@@ -43,6 +26,7 @@ extern "C" {
 
 BlynkTimer edgentTimer;
 
+#include "SysUtils.h"
 #include "BlynkState.h"
 #include "ConfigStore.h"
 #include "ResetButton.h"
@@ -68,7 +52,7 @@ void printDeviceBanner()
 #ifdef BLYNK_PRINT
   Blynk.printBanner();
   BLYNK_PRINT.println("----------------------------------------------------");
-  BLYNK_PRINT.print(" Device:    "); BLYNK_PRINT.println(getWiFiName());
+  BLYNK_PRINT.print(" Device:    "); BLYNK_PRINT.println(systemGetDeviceName());
   BLYNK_PRINT.print(" Firmware:  "); BLYNK_PRINT.println(BLYNK_FIRMWARE_VERSION " (build " __DATE__ " " __TIME__ ")");
   if (configStore.getFlag(CONFIG_FLAG_VALID)) {
     BLYNK_PRINT.print(" Token:     ");
@@ -104,9 +88,7 @@ public:
   void begin()
   {
 
-#ifdef BLYNK_FS
-    BLYNK_FS.begin();
-#endif
+    systemInit();
 
     indicator_init();
     button_init();
