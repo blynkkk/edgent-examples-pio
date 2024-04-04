@@ -12,6 +12,9 @@
 #elif defined(BLYNK_USE_SPIFFS) && defined(ESP8266)
   #include <FS.h>
   #define BLYNK_FS SPIFFS
+#endif
+
+#if defined(BLYNK_FS) && defined(ESP8266)
   #define FILE_READ  "r"
   #define FILE_WRITE "w"
 #endif
