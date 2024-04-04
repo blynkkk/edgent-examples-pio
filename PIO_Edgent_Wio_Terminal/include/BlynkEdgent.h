@@ -1,7 +1,6 @@
 
 extern "C" {
   void app_loop();
-  void restartMCU();
 }
 
 #include "Settings.h"
@@ -25,6 +24,7 @@ extern "C" {
 
 BlynkTimer edgentTimer;
 
+#include "SysUtils.h"
 #include "BlynkState.h"
 #include "ConfigStore.h"
 #include "ResetButton.h"
@@ -50,7 +50,7 @@ void printDeviceBanner()
 #ifdef BLYNK_PRINT
   Blynk.printBanner();
   BLYNK_PRINT.println("----------------------------------------------------");
-  BLYNK_PRINT.print(" Device:    "); BLYNK_PRINT.println(getWiFiName());
+  BLYNK_PRINT.print(" Device:    "); BLYNK_PRINT.println(systemGetDeviceName());
   BLYNK_PRINT.print(" Firmware:  "); BLYNK_PRINT.println(BLYNK_FIRMWARE_VERSION " (build " __DATE__ " " __TIME__ ")");
   if (configStore.getFlag(CONFIG_FLAG_VALID)) {
     BLYNK_PRINT.print(" Token:     ");
@@ -81,6 +81,8 @@ class Edgent {
 public:
   void begin()
   {
+    systemInit();
+
     //indicator_init();
     button_init();
     config_init();

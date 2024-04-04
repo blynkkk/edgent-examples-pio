@@ -2,7 +2,7 @@
 #include <ArduinoOTA.h> // only for InternalStorage
 #include <ArduinoHttpClient.h>
 
-#define OTA_FATAL(...) { BLYNK_LOG1(__VA_ARGS__); delay(1000); restartMCU(); }
+#define OTA_FATAL(...) { BLYNK_LOG1(__VA_ARGS__); delay(1000); systemReboot(); }
 
 #define USE_SSL
 
@@ -12,9 +12,12 @@ extern BlynkTimer edgentTimer;
 
 BLYNK_WRITE(InternalPinOTA) {
   overTheAirURL = param.asString();
-
-  // Force HTTP update
-  overTheAirURL.replace("https://", "http://");
+#if defined(ARDUINO_ARCH_SAMD)
+    // Use HTTP by default
+    if (!overTheAirURL.endsWith("&s=1")) {
+       overTheAirURL.replace("https://", "http://");
+    }
+#endif
 
   edgentTimer.setTimeout(2000L, [](){
     // Start OTA
